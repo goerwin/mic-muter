@@ -1,3 +1,4 @@
+import AppKit
 import KeyboardShortcuts
 import SwiftUI
 
@@ -18,18 +19,10 @@ struct MenuPopoverView: View {
     @State private var showingAbout = false
 
     var body: some View {
-        Group {
-            if showingAbout {
-                AboutView {
-                    showingAbout = false
-                }
-            } else {
-                mainContent
-            }
-        }
-        .padding(16)
-        .frame(width: 338)
-        .background(.regularMaterial)
+        mainContent
+            .padding(16)
+            .frame(width: 338)
+            .background(.regularMaterial)
     }
 
     private var mainContent: some View {
@@ -40,25 +33,24 @@ struct MenuPopoverView: View {
             shortcutRow
             Divider().padding(.vertical, 1)
             launchAtLoginRow
+            aboutSection
             footer
         }
     }
 
     private var header: some View {
         HStack(spacing: 10) {
-            Image(systemName: "waveform")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.blue)
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .scaledToFit()
                 .frame(width: 32, height: 32)
-                .background(.blue.opacity(0.12), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Mic Muter")
                     .font(.system(.headline, design: .rounded, weight: .semibold))
-                Text(model.selectedTargetTitle)
+                Text("Microphone control")
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
             Spacer(minLength: 0)
             Circle()
@@ -70,32 +62,31 @@ struct MenuPopoverView: View {
 
     private var statusCard: some View {
         VStack(spacing: 10) {
-            Image(systemName: model.status.menuBarSymbol)
-                .font(.system(size: 34, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(model.status.menuBarTint)
-                .frame(width: 76, height: 76)
-                .background(model.status.menuBarTint.opacity(0.10), in: Circle())
-                .accessibilityHidden(true)
+            Button(action: model.toggleMute) {
+                Image(systemName: model.status.menuBarSymbol)
+                    .font(.system(size: 54, weight: .medium))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(model.status.menuBarTint)
+                    .frame(width: 132, height: 132)
+                    .background(
+                        model.status.menuBarTint.opacity(0.10),
+                        in: Circle()
+                    )
+                    .contentShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .disabled(!model.canToggleSelectedDevice)
+            .accessibilityLabel(model.status.title)
+            .accessibilityHint(toggleAccessibilityHint)
 
-            VStack(spacing: 3) {
+            VStack(spacing: 4) {
                 Text(model.status.title)
                     .font(.system(.title3, design: .rounded, weight: .semibold))
-                Text(model.selectedTargetSubtitle)
+                Text(model.status.accessibilityDescription)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
-
-            Button(action: model.toggleMute) {
-                Text(model.status.actionTitle)
-                    .fontWeight(.semibold)
-                    .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .disabled(!model.canToggleSelectedDevice)
-            .accessibilityHint("Changes the mute state of the selected input device")
 
             if model.status == .inputSilent && model.isInputLevelZeroWithoutSavedValue {
                 Text("Raise the input level in Sound settings to send audio.")
@@ -170,6 +161,10 @@ struct MenuPopoverView: View {
                     Text(model.selectedTargetTitle)
                         .font(.body.weight(.medium))
                         .lineLimit(1)
+                    Text(model.selectedTargetSubtitle)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
                 Spacer(minLength: 4)
                 Image(systemName: "chevron.up.chevron.down")
@@ -227,18 +222,52 @@ struct MenuPopoverView: View {
         }
     }
 
-    private var footer: some View {
-        HStack {
+    private var aboutSection: some View {
+        VStack(spacing: 0) {
+            Divider()
+
             Button {
-                showingAbout = true
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    showingAbout.toggle()
+                }
             } label: {
-                Label("About", systemImage: "info.circle")
-                    .font(.subheadline)
+                HStack {
+                    Label("About", systemImage: "info.circle")
+                        .font(.subheadline)
+                    Spacer()
+                    Image(systemName: showingAbout ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+                .padding(.vertical, 9)
             }
             .buttonStyle(.plain)
+            .accessibilityHint(showingAbout ? "Collapse About details" : "Show About details")
 
+            if showingAbout {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Mic Muter")
+                        .font(.subheadline.weight(.semibold))
+                    Text("Version \(appVersion)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text("A simple control for your selected microphone.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 28)
+                .padding(.bottom, 8)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+            }
+        }
+    }
+
+    private var footer: some View {
+        HStack {
             Spacer()
-
             Button(action: model.terminate) {
                 Label("Quit", systemImage: "power")
                     .font(.subheadline)
@@ -248,6 +277,25 @@ struct MenuPopoverView: View {
         }
         .foregroundStyle(.secondary)
         .padding(.top, 1)
+    }
+
+    private var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    private var toggleAccessibilityHint: String {
+        switch model.status {
+        case .muted:
+            "Unmute the selected input device"
+        case .unmuted, .unknown:
+            "Mute the selected input device"
+        case .inputSilent:
+            "The input level is zero and cannot be restored by Mic Muter"
+        case .unsupported:
+            "This input device does not provide a writable mute control"
+        case .disconnected:
+            "Reconnect the selected input device to change its mute state"
+        }
     }
 
     private var statusIndicatorColor: Color {

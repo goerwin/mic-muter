@@ -19,10 +19,10 @@ final class MicMuterModel {
     private(set) var defaultInputUID: String?
     private(set) var selectedDeviceUID: String?
     private(set) var selectedDeviceNameSnapshot: String?
+    private(set) var status: MicStatus = .disconnected
     private(set) var errorMessage: String?
     private(set) var launchAtLoginError: String?
     private(set) var launchAtLoginEnabled = false
-    var showingAbout = false
 
     init() {
         selectedDeviceUID = UserDefaults.standard.string(forKey: selectedUIDKey)
@@ -41,26 +41,6 @@ final class MicMuterModel {
             Task { @MainActor [weak self] in
                 self?.toggleMute()
             }
-        }
-    }
-
-    var status: MicStatus {
-        guard let device = selectedDevice else {
-            return .disconnected
-        }
-        let deviceStatus = audio.status(for: device)
-        if deviceStatus == .unknown && !audio.canControl(device) {
-            return .unsupported
-        }
-        switch deviceStatus {
-        case .muted:
-            return .muted
-        case .unmuted:
-            return .unmuted
-        case .inputSilent:
-            return .inputSilent
-        case .unknown:
-            return .unknown
         }
     }
 
@@ -120,6 +100,7 @@ final class MicMuterModel {
         UserDefaults.standard.removeObject(forKey: selectedUIDKey)
         UserDefaults.standard.removeObject(forKey: selectedNameKey)
         errorMessage = nil
+        refreshStatus()
     }
 
     func select(_ device: AudioInputDevice) {
@@ -128,6 +109,7 @@ final class MicMuterModel {
         UserDefaults.standard.set(device.uid, forKey: selectedUIDKey)
         UserDefaults.standard.set(device.name, forKey: selectedNameKey)
         errorMessage = nil
+        refreshStatus()
     }
 
     func toggleMute() {
@@ -141,10 +123,12 @@ final class MicMuterModel {
             let shouldMute = status != .muted
             try audio.setMuted(shouldMute, for: selectedDevice)
             errorMessage = nil
+            refreshFromAudio()
+            status = shouldMute ? .muted : .unmuted
         } catch {
             errorMessage = error.localizedDescription
+            refreshFromAudio()
         }
-        refreshFromAudio()
     }
 
     func setLaunchAtLogin(_ isEnabled: Bool) {
@@ -173,6 +157,25 @@ final class MicMuterModel {
         {
             selectedDeviceNameSnapshot = device.name
             UserDefaults.standard.set(device.name, forKey: selectedNameKey)
+        }
+        refreshStatus()
+    }
+
+    private func refreshStatus() {
+        guard let selectedDevice else {
+            status = .disconnected
+            return
+        }
+
+        switch audio.status(for: selectedDevice) {
+        case .muted:
+            status = .muted
+        case .unmuted:
+            status = .unmuted
+        case .inputSilent:
+            status = .inputSilent
+        case .unknown:
+            status = audio.canControl(selectedDevice) ? .unknown : .unsupported
         }
     }
 

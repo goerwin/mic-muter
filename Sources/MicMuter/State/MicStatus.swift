@@ -45,23 +45,6 @@ enum MicStatus: Equatable {
         }
     }
 
-    var actionTitle: String {
-        switch self {
-        case .muted:
-            "Unmute microphone"
-        case .unmuted:
-            "Mute microphone"
-        case .inputSilent:
-            "Input level is zero"
-        case .unknown:
-            "Mute microphone"
-        case .unsupported:
-            "Mute unavailable"
-        case .disconnected:
-            "No microphone available"
-        }
-    }
-
     var accessibilityDescription: String {
         switch self {
         case .muted:
