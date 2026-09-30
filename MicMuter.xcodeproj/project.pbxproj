@@ -1,0 +1,271 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {};
+	objectVersion = 60;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A10000000000000000000001 /* MicMuterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000001 /* MicMuterApp.swift */; };
+		A10000000000000000000002 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000002 /* AppModel.swift */; };
+		A10000000000000000000003 /* CoreAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000003 /* CoreAudioDeviceManager.swift */; };
+		A10000000000000000000004 /* MenuPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000004 /* MenuPopoverView.swift */; };
+		A10000000000000000000005 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000005 /* AboutView.swift */; };
+		A10000000000000000000006 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = F10000000000000000000002 /* KeyboardShortcuts */; };
+		A10000000000000000000007 /* MicStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000008 /* MicStatus.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		C10000000000000000000001 /* MicMuterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicMuterApp.swift; sourceTree = "<group>"; };
+		C10000000000000000000002 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		C10000000000000000000003 /* CoreAudioDeviceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAudioDeviceManager.swift; sourceTree = "<group>"; };
+		C10000000000000000000004 /* MenuPopoverView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuPopoverView.swift; sourceTree = "<group>"; };
+		C10000000000000000000005 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		C10000000000000000000006 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Resources/Info.plist; sourceTree = "<group>"; };
+		C10000000000000000000007 /* Mic Muter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Mic Muter.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		C10000000000000000000008 /* MicStatus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicStatus.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		D10000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000006 /* KeyboardShortcuts in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E10000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				E10000000000000000000002 /* App */,
+				E10000000000000000000003 /* Audio */,
+				E10000000000000000000004 /* UI */,
+				E10000000000000000000006 /* State */,
+				C10000000000000000000006 /* Info.plist */,
+				E10000000000000000000005 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		E10000000000000000000002 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000001 /* MicMuterApp.swift */,
+				C10000000000000000000002 /* AppModel.swift */,
+			);
+			path = Sources/MicMuter/App;
+			sourceTree = "<group>";
+		};
+		E10000000000000000000003 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000003 /* CoreAudioDeviceManager.swift */,
+			);
+			path = Sources/MicMuter/Audio;
+			sourceTree = "<group>";
+		};
+		E10000000000000000000004 /* UI */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000004 /* MenuPopoverView.swift */,
+				C10000000000000000000005 /* AboutView.swift */,
+			);
+			path = Sources/MicMuter/UI;
+			sourceTree = "<group>";
+		};
+		E10000000000000000000005 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000007 /* Mic Muter.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E10000000000000000000006 /* State */ = {
+			isa = PBXGroup;
+			children = (
+				C10000000000000000000008 /* MicStatus.swift */,
+			);
+			path = Sources/MicMuter/State;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		B10000000000000000000001 /* Mic Muter */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = B20000000000000000000002 /* Build configuration list for PBXNativeTarget "Mic Muter" */;
+			buildPhases = (
+				D20000000000000000000001 /* Sources */,
+				D10000000000000000000001 /* Frameworks */,
+				D20000000000000000000002 /* Resources */,
+			);
+			buildRules = ();
+			dependencies = ();
+			name = "Mic Muter";
+			packageProductDependencies = (
+				F10000000000000000000002 /* KeyboardShortcuts */,
+			);
+			productName = "Mic Muter";
+			productReference = C10000000000000000000007 /* Mic Muter.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B30000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2650;
+				LastUpgradeCheck = 2650;
+				TargetAttributes = {
+					B10000000000000000000001 = {CreatedOnToolsVersion = 26.5; };
+				};
+			};
+			buildConfigurationList = B20000000000000000000001 /* Build configuration list for PBXProject "Mic Muter" */;
+			compatibilityVersion = "Xcode 15.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E10000000000000000000001;
+			packageReferences = (
+				F10000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+			);
+			productRefGroup = E10000000000000000000005 /* Products */;
+			targets = (
+				B10000000000000000000001 /* Mic Muter */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		D20000000000000000000002 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = ();
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		D20000000000000000000001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000001 /* MicMuterApp.swift in Sources */,
+				A10000000000000000000002 /* AppModel.swift in Sources */,
+				A10000000000000000000003 /* CoreAudioDeviceManager.swift in Sources */,
+				A10000000000000000000004 /* MenuPopoverView.swift in Sources */,
+				A10000000000000000000005 /* AboutView.swift in Sources */,
+				A10000000000000000000007 /* MicStatus.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		B40000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B40000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_MODULES = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		B40000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goerwin.MicMuter;
+				PRODUCT_NAME = "Mic Muter";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		B40000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGNING_ALLOWED = YES;
+				CODE_SIGNING_REQUIRED = YES;
+				ENABLE_HARDENED_RUNTIME = NO;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Resources/Info.plist;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.goerwin.MicMuter;
+				PRODUCT_NAME = "Mic Muter";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		B20000000000000000000001 /* Build configuration list for PBXProject "Mic Muter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B40000000000000000000001 /* Debug */,
+				B40000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		B20000000000000000000002 /* Build configuration list for PBXNativeTarget "Mic Muter" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B40000000000000000000003 /* Debug */,
+				B40000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		F10000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 3.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		F10000000000000000000002 /* KeyboardShortcuts */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F10000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
+			productName = KeyboardShortcuts;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = B30000000000000000000001 /* Project object */;
+}
