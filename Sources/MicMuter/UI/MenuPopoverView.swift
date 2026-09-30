@@ -79,14 +79,8 @@ struct MenuPopoverView: View {
             .accessibilityLabel(model.status.title)
             .accessibilityHint(toggleAccessibilityHint)
 
-            VStack(spacing: 4) {
-                Text(model.status.title)
-                    .font(.system(.title3, design: .rounded, weight: .semibold))
-                Text(model.status.accessibilityDescription)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
+            Text(model.status.title)
+                .font(.system(.title3, design: .rounded, weight: .semibold))
 
             if model.status == .inputSilent && model.isInputLevelZeroWithoutSavedValue {
                 Text("Raise the input level in Sound settings to send audio.")
@@ -117,68 +111,77 @@ struct MenuPopoverView: View {
     }
 
     private var devicePicker: some View {
-        Menu {
-            Button {
-                model.selectDefaultInput()
-            } label: {
-                selectionLabel(
-                    title: "Default Input",
-                    subtitle: model.currentDefaultDeviceName,
-                    isSelected: model.selectedDeviceUID == nil
-                )
-            }
+        VStack(spacing: 0) {
+            Menu {
+                Button {
+                    model.selectDefaultInput()
+                } label: {
+                    selectionLabel(
+                        title: "Default Input",
+                        subtitle: model.currentDefaultDeviceName,
+                        isSelected: model.selectedDeviceUID == nil
+                    )
+                }
 
-            if model.isSelectedDeviceDisconnected {
-                Divider()
-                Label("\(model.selectedTargetTitle) · Unavailable", systemImage: "exclamationmark.circle")
-                    .disabled(true)
-            }
+                if model.isSelectedDeviceDisconnected {
+                    Divider()
+                    Label("\(model.selectedInputName) · Unavailable", systemImage: "exclamationmark.circle")
+                        .disabled(true)
+                }
 
-            if !model.devices.isEmpty {
-                Divider()
-                ForEach(model.devices) { device in
-                    Button {
-                        model.select(device)
-                    } label: {
-                        selectionLabel(
-                            title: device.name,
-                            subtitle: nil,
-                            isSelected: model.selectedDeviceUID == device.uid
-                        )
+                if !model.devices.isEmpty {
+                    Divider()
+                    ForEach(model.devices) { device in
+                        Button {
+                            model.select(device)
+                        } label: {
+                            selectionLabel(
+                                title: device.name,
+                                subtitle: nil,
+                                isSelected: model.selectedDeviceUID == device.uid
+                            )
+                        }
                     }
                 }
+            } label: {
+                HStack {
+                    Label("Input device", systemImage: "mic")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .contentShape(Rectangle())
+                .padding(.horizontal, 11)
+                .padding(.vertical, 10)
             }
-        } label: {
+            .menuStyle(.borderlessButton)
+
+            Divider().padding(.leading, 43)
+
             HStack(spacing: 10) {
-                Image(systemName: "mic")
-                    .font(.system(size: 15, weight: .medium))
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
                     .frame(width: 22)
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Input device")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text(model.selectedTargetTitle)
+                    Text(model.selectedInputName)
                         .font(.body.weight(.medium))
                         .lineLimit(1)
-                    Text(model.selectedTargetSubtitle)
+                    Text(model.selectedInputDescription)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                Spacer(minLength: 4)
-                Image(systemName: "chevron.up.chevron.down")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.tertiary)
+                Spacer(minLength: 0)
             }
-            .contentShape(Rectangle())
             .padding(.horizontal, 11)
             .padding(.vertical, 9)
-            .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .accessibilityElement(children: .combine)
         }
-        .menuStyle(.borderlessButton)
-        .accessibilityLabel("Input device")
-        .accessibilityValue(model.selectedTargetTitle)
+        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var shortcutRow: some View {
