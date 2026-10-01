@@ -16,7 +16,7 @@ struct MenuBarIconSmokeTest {
                 }
             }
             precondition(hasVisiblePixel, "Missing-asset fallback is blank for \(status)")
-            precondition(image.isTemplate == !status.tintsMenuBarIcon)
+            precondition(image.isTemplate, "Menu bar icons should adapt to the system appearance")
         }
         print("Menu bar icon fallback smoke test passed.")
     }

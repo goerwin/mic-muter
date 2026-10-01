@@ -6,17 +6,12 @@ final class MicStatusTests: XCTestCase {
     func testMutedAndUnmutedStatesUseDistinctGlyphs() {
         XCTAssertTrue(MicStatus.muted.isSlashed)
         XCTAssertFalse(MicStatus.unmuted.isSlashed)
-        XCTAssertTrue(MicStatus.unmuted.tintsMenuBarIcon)
-        XCTAssertFalse(MicStatus.muted.tintsMenuBarIcon)
     }
 
-    func testEveryStateHasTitleAndTint() {
+    func testEveryStateHasTitle() {
         for status in MicStatus.allCases {
             XCTAssertFalse(status.title.isEmpty)
         }
-        XCTAssertTrue(MicStatus.unmuted.tintsMenuBarIcon)
-        XCTAssertFalse(MicStatus.muted.tintsMenuBarIcon)
-        XCTAssertFalse(MicStatus.unknown.tintsMenuBarIcon)
     }
 
     func testSlashOnlyForMutedAndInputSilent() {

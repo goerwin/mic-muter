@@ -8,14 +8,12 @@ enum MenuBarIcon {
     private struct CacheKey: Hashable {
         let status: MicStatus
         let appearance: String
-        let accent: String
     }
 
     static func image(for status: MicStatus) -> NSImage {
         let key = CacheKey(
             status: status,
-            appearance: NSApp.effectiveAppearance.name.rawValue,
-            accent: status.tintsMenuBarIcon ? NSColor.controlAccentColor.description : "template"
+            appearance: NSApp.effectiveAppearance.name.rawValue
         )
 
         if let cached = cache[key] {
@@ -37,27 +35,19 @@ enum MenuBarIcon {
             ?? NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
         guard let base else { return NSImage(size: canvasSize) }
 
-        if status.tintsMenuBarIcon {
-            return fittedImage(from: base, isTemplate: false, tint: .controlAccentColor)
-        }
-        return fittedImage(from: base, isTemplate: true, opacity: 0.55)
+        let opacity: CGFloat = status == .unmuted ? 1 : 0.55
+        return fittedImage(from: base, opacity: opacity)
     }
 
-    private static func fittedImage(
-        from base: NSImage, isTemplate: Bool, opacity: CGFloat = 1, tint: NSColor? = nil
-    ) -> NSImage {
+    private static func fittedImage(from base: NSImage, opacity: CGFloat = 1) -> NSImage {
         let drawRect = fittedRect(for: base)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
         base.draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: opacity)
-        if let tint {
-            tint.set()
-            drawRect.fill(using: .sourceAtop)
-        }
         image.unlockFocus()
         image.size = canvasSize
-        image.isTemplate = isTemplate
+        image.isTemplate = true
         return image
     }
 

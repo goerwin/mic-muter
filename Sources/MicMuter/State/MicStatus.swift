@@ -27,10 +27,6 @@ enum MicStatus: Equatable, CaseIterable {
         self == .muted || self == .inputSilent
     }
 
-    var tintsMenuBarIcon: Bool {
-        self == .unmuted
-    }
-
     var accessibilityDescription: String {
         switch self {
         case .muted:
