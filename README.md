@@ -1,13 +1,28 @@
 # Mic Muter
 
-A menu-bar-only macOS app for toggling the selected microphone with a button or global shortcut.
+<img src="Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-256.png" width="128" alt="Mic Muter icon">
 
-## Requirements
+A menu-bar-only macOS app that mutes and unmutes the microphone you select. Click the menu bar icon, or assign a global shortcut.
 
-- macOS 14 or later
-- Xcode with Swift and `swift-format`
+## Features
 
-## Commands
+- **Menu bar only.** No dock icon and no window. Left-click to toggle mute; right-click opens the popover, where the device picker, shortcut recorder, and Launch at Login live.
+- **Any input device.** Pick a microphone, or leave it on System Default to follow whatever macOS considers current. The list updates when devices come and go.
+- **Real mute, with a fallback.** Mic Muter sets the device's own mute control when one exists. Devices exposing only a volume control, such as many webcams, are muted by dropping their input level to zero, and the previous level is restored on unmute.
+- **Six-state icon.** Muted, unmuted, input-silent, unknown, unsupported, and disconnected, so a device that cannot be muted never looks like a working one.
+- **Accessible.** Every state has its own spoken description, and the status item is labelled for VoiceOver.
+
+Mic Muter reads the system's Core Audio mute state. It cannot see per-app mute toggles inside Zoom or Teams, since those are private to those apps.
+
+## Installing
+
+Requires macOS 14 or later. Download `Mic Muter.dmg` from the Releases page, drag `Mic Muter.app` to `/Applications`, and open it.
+
+Releases are ad-hoc signed rather than notarized, so macOS blocks the first launch. Open **System Settings > Privacy & Security** and click **Open Anyway**; this is needed once per version. macOS 15 removed the right-click > Open shortcut, so the System Settings step is the only route.
+
+## Development
+
+Needs Xcode and `swift-format`.
 
 - `make build` builds the app with Xcode.
 - `make test` runs unit tests for mute state presentation and accessibility labels.
@@ -32,26 +47,3 @@ Each release has two assets: `Mic Muter.dmg` (Apple silicon and Intel) and `SHA2
 ### Release notes
 
 Generated automatically from the commits between the new tag and the previous one, so there is nothing to write. `feat:` and `fix:` subjects are grouped under those headings; anything else is listed verbatim. Each line links to its commit. Keep commit subjects descriptive, since they become the release body.
-
-## Installing
-
-Download `Mic Muter.dmg` from the Releases page, drag `Mic Muter.app` to `/Applications`, and open it.
-
-Releases are ad-hoc signed rather than notarized, so macOS blocks the first launch. Open **System Settings > Privacy & Security** and click **Open Anyway**; this is needed once per version. macOS 15 removed the right-click > Open shortcut, so the System Settings step is the only route.
-
-Publishing to Homebrew is not an option: since 2026-09-01 casks failing Gatekeeper checks are disabled, which requires signing with a paid Apple Developer Program membership.
-
-## Features
-
-- **Menu bar only.** No dock icon and no main window; the status item and its popover are the whole interface.
-- **Mute from the menu bar.** Click the status item to toggle mute, or assign a global shortcut and mute without touching the menu bar at all. The shortcut starts unassigned; record one in the popover.
-- **Right-click for options.** Right-clicking the status item opens the popover, where the device picker, shortcut recorder, and Launch at Login live.
-- **Any input device.** Pick the microphone to control, or leave it on System Default to follow whatever macOS considers current. The list updates when devices are plugged in or removed.
-- **Real mute, with a fallback.** Mic Muter sets the device's own mute control when one exists. Devices that expose only a volume control, such as many webcams, are muted by dropping their input level to zero instead, and the previous level is restored on unmute.
-- **Six-state icon.** The status item distinguishes muted, unmuted, input-silent, unknown, unsupported, and disconnected, so a device that cannot be muted never looks like a working one.
-- **Launch at Login.** Optional and off by default, using `SMAppService`.
-- **Accessible.** Every state has its own spoken description and the status item is labelled for VoiceOver.
-
-Mic Muter reads the system's Core Audio mute state. It cannot see per-app mute toggles inside Zoom, Teams, or similar conferencing software, since those are private to those apps.
-
-The unit tests cover state-to-icon and accessibility mapping. They do not exercise microphone hardware.
