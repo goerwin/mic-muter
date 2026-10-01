@@ -48,7 +48,7 @@ Needs Xcode and `swift-format`.
 
 Pushing a `vMAJOR.MINOR.PATCH` tag builds a universal DMG and attaches it to a GitHub Release. The tag is the only source of truth for the version.
 
-Run `make release-patch`, `make release-minor`, or `make release-major`. These targets call `Scripts/release.sh`, which fetches the tags, bumps the latest stable version, shows the version and commit, then asks for confirmation before pushing the new tag to `origin`. Keep your working tree clean first.
+Run `make release-patch`, `make release-minor`, or `make release-major`. These targets call `Scripts/release.sh`, which fetches the tags, bumps the latest stable version, then asks for confirmation before pushing a lightweight tag to `origin`. Keep your working tree clean first.
 
 Or trigger it from the Actions tab via *Release* > *Run workflow* with the tag you want.
 

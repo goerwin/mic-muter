@@ -12,7 +12,9 @@ fi
 
 bump="$1"
 case "$bump" in
-  patch|minor|major) ;;
+  patch) release_type="Patch" ;;
+  minor) release_type="Minor" ;;
+  major) release_type="Major" ;;
   *)
     usage
     exit 2
@@ -31,10 +33,10 @@ if [[ -n "$(git status --porcelain --untracked-files=all)" ]]; then
 fi
 
 remote=origin
-remote_url="$(git remote get-url "$remote" 2>/dev/null)" || {
+if ! git remote get-url "$remote" >/dev/null 2>&1; then
   echo "Git remote '$remote' is not configured." >&2
   exit 1
-}
+fi
 
 git fetch --tags "$remote"
 
@@ -77,16 +79,9 @@ if git show-ref --verify --quiet "refs/tags/$new_tag"; then
   exit 1
 fi
 
-branch="$(git symbolic-ref --quiet --short HEAD || printf 'detached HEAD')"
-commit="$(git log -1 --format='%h %s')"
-
-printf '\nRelease confirmation\n'
-printf '  Change:     %s after %s\n' "$bump" "$latest_tag"
-printf '  New tag:    %s\n' "$new_tag"
-printf '  Commit:     %s\n' "$commit"
-printf '  Branch:     %s\n' "$branch"
-printf '  Destination: %s (%s)\n' "$remote" "$remote_url"
-printf '\nPushing this tag starts the GitHub release workflow.\n'
+printf '\n🚀 %s Release: %s → %s\n\n' "$release_type" "$latest_tag" "$new_tag"
+printf '🏷️  New tag: %s\n' "$new_tag"
+printf '   Pushing this tag starts the GitHub release workflow.\n\n'
 printf 'Proceed? [y/N] '
 IFS= read -r answer || answer=""
 
@@ -98,7 +93,7 @@ case "$answer" in
     ;;
 esac
 
-git tag -a "$new_tag" -m "Release $new_tag"
+git tag "$new_tag"
 if ! git push "$remote" "refs/tags/$new_tag:refs/tags/$new_tag"; then
   git tag -d "$new_tag" >/dev/null 2>&1 || true
   echo "Push failed. Removed local tag '$new_tag'; you can retry after fixing the issue." >&2
