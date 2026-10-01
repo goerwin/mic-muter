@@ -24,3 +24,12 @@ jobs:
 
       - name: Test
         run: make test
+
+      # `make test` only covers the MicMuterState SwiftPM target. Without this
+      # the app target is never compiled in CI, so a broken build can merge.
+      - name: Build app
+        run: make build
+
+      # Catches a missing or unresolved version, the most likely CI-only failure.
+      - name: Package DMG
+        run: make release VERSION=0.0.0-ci

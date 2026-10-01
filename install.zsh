@@ -1,6 +1,10 @@
 #!/bin/zsh
 set -euo pipefail
 
+# Builds from source and installs to /Applications, replacing any existing copy.
+# Version comes from the project default; override with VERSION=x.y.z.
+# For a signed, notarized build, install the release DMG instead.
+
 project_root="${0:A:h}"
 install_directory="/Applications"
 app_name="Mic Muter.app"
@@ -41,6 +45,12 @@ if [[ ! -d "$app_source" ]]; then
 	exit 1
 fi
 
+version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app_source/Contents/Info.plist")
+print "Installing Mic Muter $version from source to $app_destination"
+if [[ -e "$app_destination" ]]; then
+	print "This replaces the existing copy in $install_directory."
+fi
+
 quit_running_app
 
 sudo ditto "$app_source" "$temporary_app"
@@ -52,5 +62,5 @@ if [[ -e "$backup_app" ]]; then
 	sudo rm -rf "$backup_app"
 fi
 trap - EXIT INT TERM
-print "Installed Mic Muter to: $app_destination"
+print "Installed Mic Muter $version to: $app_destination"
 open "$app_destination"
