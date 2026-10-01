@@ -31,9 +31,11 @@ enum MenuBarIcon {
 
     private static func render(status: MicStatus) -> NSImage {
         let name = MicGlyph.assetName(isSlashed: status.isSlashed)
-        guard let base = NSImage(named: name) else {
-            return fallbackImage(for: status)
-        }
+        let symbolName = status.isSlashed ? "mic.slash.fill" : "mic.fill"
+        let base =
+            NSImage(named: name)
+            ?? NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+        guard let base else { return NSImage(size: canvasSize) }
 
         if status.tintsMenuBarIcon {
             return tintedImage(from: base, color: .controlAccentColor)
@@ -42,7 +44,7 @@ enum MenuBarIcon {
     }
 
     private static func fittedImage(from base: NSImage, isTemplate: Bool, opacity: CGFloat = 1) -> NSImage {
-        let drawRect = NSRect(origin: fittedOrigin, size: fittedSize)
+        let drawRect = fittedRect(for: base)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
@@ -54,7 +56,7 @@ enum MenuBarIcon {
     }
 
     private static func tintedImage(from base: NSImage, color: NSColor) -> NSImage {
-        let drawRect = NSRect(origin: fittedOrigin, size: fittedSize)
+        let drawRect = fittedRect(for: base)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
@@ -67,51 +69,15 @@ enum MenuBarIcon {
         return image
     }
 
-    private static var fittedSize: NSSize {
-        let vectorSize = MicGlyph.vectorSize
-        let scale = min(canvasSize.width / vectorSize.width, canvasSize.height / vectorSize.height)
-        return NSSize(width: vectorSize.width * scale, height: vectorSize.height * scale)
-    }
-
-    private static var fittedOrigin: NSPoint {
-        let size = fittedSize
-        return NSPoint(x: (canvasSize.width - size.width) / 2, y: (canvasSize.height - size.height) / 2)
-    }
-
-    private static func fallbackImage(for status: MicStatus) -> NSImage {
-        let pixelsWide = Int(canvasSize.width * 2)
-        let pixelsHigh = Int(canvasSize.height * 2)
-        guard
-            let rep = NSBitmapImageRep(
-                bitmapDataPlanes: nil,
-                pixelsWide: pixelsWide,
-                pixelsHigh: pixelsHigh,
-                bitsPerSample: 8,
-                samplesPerPixel: 4,
-                hasAlpha: true,
-                isPlanar: false,
-                colorSpaceName: .deviceRGB,
-                bytesPerRow: 0,
-                bitsPerPixel: 0
-            )
-        else {
-            return NSImage(size: canvasSize)
-        }
-        rep.size = canvasSize
-        NSGraphicsContext.saveGraphicsState()
-        let context = NSGraphicsContext(bitmapImageRep: rep)
-        NSGraphicsContext.current = context
-        context?.imageInterpolation = .high
-        if let cgContext = context?.cgContext {
-            let color: CGColor =
-                status.tintsMenuBarIcon ? NSColor.controlAccentColor.cgColor : NSColor.black.cgColor
-            MicGlyph.draw(in: cgContext, canvasSize: canvasSize, color: color, isSlashed: status.isSlashed)
-        }
-        NSGraphicsContext.restoreGraphicsState()
-        let image = NSImage(size: canvasSize)
-        image.addRepresentation(rep)
-        image.isTemplate = !status.tintsMenuBarIcon
-        return image
+    private static func fittedRect(for base: NSImage) -> NSRect {
+        let size = base.size
+        guard size.width > 0, size.height > 0 else { return NSRect(origin: .zero, size: canvasSize) }
+        let scale = min(canvasSize.width / size.width, canvasSize.height / size.height)
+        let fitted = NSSize(width: size.width * scale, height: size.height * scale)
+        return NSRect(
+            x: (canvasSize.width - fitted.width) / 2, y: (canvasSize.height - fitted.height) / 2,
+            width: fitted.width, height: fitted.height
+        )
     }
 
     static func invalidateCache() {

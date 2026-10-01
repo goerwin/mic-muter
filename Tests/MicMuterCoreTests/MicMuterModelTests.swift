@@ -17,11 +17,13 @@ final class MicMuterModelTests: XCTestCase {
     private final class FakeSelection: DeviceSelectionStoring {
         var selectedDeviceUID: String?
         var selectedDeviceNameSnapshot: String?
+        var nameSnapshotWriteCount = 0
         func saveSelection(uid: String, name: String) {
             selectedDeviceUID = uid
             selectedDeviceNameSnapshot = name
         }
         func saveNameSnapshot(_ name: String, for uid: String) {
+            nameSnapshotWriteCount += 1
             if selectedDeviceUID == uid { selectedDeviceNameSnapshot = name }
         }
         func clearSelection() {
@@ -37,12 +39,14 @@ final class MicMuterModelTests: XCTestCase {
 
     @MainActor
     private final class FakeLogin: LoginItemServing {
-        var isEnabled = false
+        var status: LoginItemStatus = .disabled
         var setError: Error?
+        var settingsOpened = false
         func setEnabled(_ isEnabled: Bool) throws {
             if let setError { throw setError }
-            self.isEnabled = isEnabled
+            status = isEnabled ? .enabled : .disabled
         }
+        func openSettings() { settingsOpened = true }
     }
 
     @MainActor
@@ -52,7 +56,7 @@ final class MicMuterModelTests: XCTestCase {
     }
 
     private func makeModel(
-        audio: MockAudioManager,
+        audio: any AudioDeviceManaging,
         selection injectedSelection: FakeSelection? = nil,
         settings injectedSettings: FakeSettings? = nil,
         login injectedLogin: FakeLogin? = nil,
@@ -175,6 +179,23 @@ final class MicMuterModelTests: XCTestCase {
         XCTAssertNotNil(model.launchAtLoginError)
     }
 
+    func testLaunchAtLoginReflectsExternalChangeWhenOpeningOptions() {
+        let login = FakeLogin()
+        let (model, _, _, _, _) = makeModel(audio: MockAudioManager(), login: login)
+        login.status = .enabled
+        model.refreshLoginItemState()
+        XCTAssertTrue(model.launchAtLoginEnabled)
+        login.status = .requiresApproval
+        model.refreshLoginItemState()
+        XCTAssertEqual(model.launchAtLoginStatus, .requiresApproval)
+        XCTAssertTrue(model.launchAtLoginEnabled)
+        model.openLoginItemSettings()
+        XCTAssertTrue(login.settingsOpened)
+        login.status = .disabled
+        model.refreshLoginItemState()
+        XCTAssertFalse(model.launchAtLoginEnabled)
+    }
+
     func testRegisteredShortcutTogglesMute() async {
         let audio = MockAudioManager()
         let device = makeDevice()
@@ -203,5 +224,99 @@ final class MicMuterModelTests: XCTestCase {
         XCTAssertEqual(model.status, .disconnected)
         XCTAssertTrue(model.isSelectedDeviceDisconnected)
         XCTAssertEqual(model.selectedInputName, "Old Mic")
+    }
+
+    private func makeFallbackFixture() -> (
+        UserDefaults, AudioInputDevice, MockAudioDevicePropertyAccess, MockAudioDeviceMonitor
+    ) {
+        let domain = "test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: domain)!
+        addTeardownBlock { defaults.removePersistentDomain(forName: domain) }
+        let device = makeDevice()
+        let properties = MockAudioDevicePropertyAccess()
+        properties.volumePropertiesByUID[device.uid] = [AudioInputVolumeProperty(element: 1, isWritable: true)]
+        properties.volumeValuesByUID[device.uid] = [VolumeSnapshot(element: 1, value: 0.7)]
+        let monitor = MockAudioDeviceMonitor()
+        monitor.devices = [device]
+        monitor.defaultDeviceID = device.objectID
+        return (defaults, device, properties, monitor)
+    }
+
+    func testRetryFailedUnmuteThroughModelRestoresOriginalLevels() {
+        let (defaults, device, properties, monitor) = makeFallbackFixture()
+        let manager = CoreAudioDeviceManager(
+            volumeStore: VolumeStore(defaults: defaults), propertyAccess: properties, monitor: monitor
+        )
+        let (model, _, _, _, _) = makeModel(audio: manager)
+        defer { model.stop() }
+
+        model.toggleMute()
+        XCTAssertEqual(model.status, .muted)
+        properties.volumeWriteOutcomes = [.failure()]
+        model.toggleMute()
+        XCTAssertEqual(model.status, .unknown)
+        XCTAssertNotNil(model.errorMessage)
+
+        model.toggleMute()
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(properties.volumeValuesByUID[device.uid]?.first?.value, 0.7)
+    }
+
+    func testRestartPreservesFailedUnmuteIntent() {
+        let (defaults, device, properties, monitor) = makeFallbackFixture()
+        let manager = CoreAudioDeviceManager(
+            volumeStore: VolumeStore(defaults: defaults), propertyAccess: properties, monitor: monitor
+        )
+        let (model, _, _, _, _) = makeModel(audio: manager)
+        model.toggleMute()
+        properties.volumeWriteOutcomes = [.failure()]
+        model.toggleMute()
+        XCTAssertTrue(model.isRecoveryPending)
+        model.stop()
+
+        let restartedManager = CoreAudioDeviceManager(
+            volumeStore: VolumeStore(defaults: defaults), propertyAccess: properties, monitor: monitor
+        )
+        let (restartedModel, _, _, _, _) = makeModel(audio: restartedManager)
+        defer { restartedModel.stop() }
+        XCTAssertTrue(restartedModel.isRecoveryPending)
+        restartedModel.toggleMute()
+        XCTAssertEqual(restartedModel.status, .unmuted)
+        XCTAssertFalse(restartedModel.isRecoveryPending)
+        XCTAssertEqual(properties.volumeValuesByUID[device.uid]?.first?.value, 0.7)
+    }
+
+    func testAudioNotificationsOnlyPersistNameWhenChanged() {
+        let audio = MockAudioManager()
+        let device = makeDevice()
+        audio.inputDevices = [device]
+        let selection = FakeSelection()
+        selection.selectedDeviceUID = device.uid
+        selection.selectedDeviceNameSnapshot = device.name
+        let (model, _, _, _, _) = makeModel(audio: audio, selection: selection)
+        audio.onChange?()
+        audio.onChange?()
+        XCTAssertEqual(selection.nameSnapshotWriteCount, 0)
+        audio.inputDevices = [makeDevice(name: "Renamed Mic")]
+        audio.onChange?()
+        audio.onChange?()
+        XCTAssertEqual(selection.nameSnapshotWriteCount, 1)
+        XCTAssertEqual(model.selectedInputName, "Renamed Mic")
+    }
+
+    func testViewGettersUseObservedSnapshotWithoutHardwareReads() {
+        let audio = MockAudioManager()
+        let device = makeDevice()
+        audio.inputDevices = [device]
+        audio.defaultInputUID = device.uid
+        let (model, _, _, _, _) = makeModel(audio: audio)
+        audio.stateHandler = { _ in
+            XCTFail("View getters must not query hardware")
+            return AudioDeviceState(status: .unknown, canControl: false, hasSavedInputLevel: false, pendingMute: nil)
+        }
+        XCTAssertTrue(model.canToggleSelectedDevice)
+        XCTAssertNil(model.controlUnavailableMessage)
+        XCTAssertFalse(model.isInputLevelZeroWithoutSavedValue)
+        XCTAssertFalse(model.isRecoveryPending)
     }
 }

@@ -7,9 +7,8 @@ protocol AudioDeviceManaging: AnyObject {
     var onChange: (() -> Void)? { get set }
 
     func startMonitoring()
-    func canControl(_ device: AudioInputDevice) -> Bool
-    func status(for device: AudioInputDevice) -> AudioDeviceStatus
-    func hasSavedInputLevel(for device: AudioInputDevice) -> Bool
+    func stopMonitoring()
+    func state(for device: AudioInputDevice) -> AudioDeviceState
     func setMuted(_ shouldMute: Bool, for device: AudioInputDevice) throws
 }
 

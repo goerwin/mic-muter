@@ -18,8 +18,9 @@ final class MicMuterModel {
     private(set) var status: MicStatus = .disconnected
     private(set) var errorMessage: String?
     private(set) var launchAtLoginError: String?
-    private(set) var launchAtLoginEnabled = false
+    private(set) var launchAtLoginStatus: LoginItemStatus = .disabled
     private(set) var showHUDOnToggle: Bool
+    private var selectedAudioState: AudioDeviceState?
 
     init(
         audio: any AudioDeviceManaging,
@@ -40,14 +41,10 @@ final class MicMuterModel {
         self.selectedDeviceNameSnapshot = selectionStore.selectedDeviceNameSnapshot
         self.showHUDOnToggle = settings.showHUDOnToggle
 
-        self.audio.onChange = { [weak self] in
-            Task { @MainActor in
-                self?.refreshFromAudio()
-            }
-        }
+        self.audio.onChange = { [weak self] in self?.refreshFromAudio() }
         self.audio.startMonitoring()
         refreshFromAudio()
-        refreshLoginAtLaunchState()
+        refreshLoginItemState()
 
         shortcutService.onToggle { [weak self] in
             Task { @MainActor [weak self] in
@@ -57,12 +54,11 @@ final class MicMuterModel {
     }
 
     var canToggleSelectedDevice: Bool {
-        guard let selectedDevice, audio.canControl(selectedDevice) else { return false }
-        return status.canToggle
+        selectedAudioState?.canControl == true && status.canToggle
     }
 
     var controlUnavailableMessage: String? {
-        guard let selectedDevice, !audio.canControl(selectedDevice) else { return nil }
+        guard let selectedAudioState, !selectedAudioState.canControl else { return nil }
         return "macOS does not expose a writable mute or input level control for this device."
     }
 
@@ -87,8 +83,13 @@ final class MicMuterModel {
     }
 
     var isInputLevelZeroWithoutSavedValue: Bool {
-        guard status == .inputSilent, let selectedDevice else { return false }
-        return !audio.hasSavedInputLevel(for: selectedDevice)
+        status == .inputSilent && selectedAudioState?.hasSavedInputLevel == false
+    }
+
+    var isRecoveryPending: Bool { selectedAudioState?.pendingMute != nil }
+
+    var launchAtLoginEnabled: Bool {
+        launchAtLoginStatus == .enabled || launchAtLoginStatus == .requiresApproval
     }
 
     func selectDefaultInput() {
@@ -108,6 +109,7 @@ final class MicMuterModel {
     }
 
     func toggleMute() {
+        refreshFromAudio()
         guard canToggleSelectedDevice else { return }
         guard let selectedDevice else {
             errorMessage = "No input device is available."
@@ -116,7 +118,7 @@ final class MicMuterModel {
 
         var didToggle = false
         do {
-            try audio.setMuted(status != .muted, for: selectedDevice)
+            try audio.setMuted(selectedAudioState?.pendingMute ?? (status != .muted), for: selectedDevice)
             errorMessage = nil
             didToggle = true
         } catch {
@@ -135,7 +137,11 @@ final class MicMuterModel {
         } catch {
             launchAtLoginError = error.localizedDescription
         }
-        refreshLoginAtLaunchState()
+        refreshLoginItemState()
+    }
+
+    func openLoginItemSettings() {
+        loginService.openSettings()
     }
 
     func setShowHUDOnToggle(_ isEnabled: Bool) {
@@ -144,13 +150,21 @@ final class MicMuterModel {
     }
 
     func terminate() {
+        stop()
         terminator()
+    }
+
+    func stop() {
+        audio.onChange = nil
+        audio.stopMonitoring()
     }
 
     private func refreshFromAudio() {
         devices = audio.inputDevices
         defaultInputUID = audio.defaultInputUID
-        if let selectedDeviceUID, let device = device(for: selectedDeviceUID) {
+        if let selectedDeviceUID, let device = device(for: selectedDeviceUID),
+            selectedDeviceNameSnapshot != device.name
+        {
             selectedDeviceNameSnapshot = device.name
             selectionStore.saveNameSnapshot(device.name, for: selectedDeviceUID)
         }
@@ -164,15 +178,16 @@ final class MicMuterModel {
 
     private func refreshStatus() {
         guard let selectedDevice else {
+            selectedAudioState = nil
             status = .disconnected
             return
         }
-        let audioStatus = audio.status(for: selectedDevice)
-        let canControl = audioStatus != .unknown || audio.canControl(selectedDevice)
-        status = MicStatusMapper.map(audioStatus, canControl: canControl)
+        let state = audio.state(for: selectedDevice)
+        selectedAudioState = state
+        status = MicStatusMapper.map(state.status, canControl: state.canControl)
     }
 
-    private func refreshLoginAtLaunchState() {
-        launchAtLoginEnabled = loginService.isEnabled
+    func refreshLoginItemState() {
+        launchAtLoginStatus = loginService.status
     }
 }

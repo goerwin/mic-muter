@@ -6,7 +6,8 @@ protocol AudioDevicePropertyAccess: AnyObject {
     func canSetMute(for device: AudioInputDevice) -> Bool
     func setMute(_ muted: Bool, for device: AudioInputDevice) -> Bool
     func volumeProperties(for device: AudioInputDevice) -> [AudioInputVolumeProperty]
-    func volumeValues(for device: AudioInputDevice) -> [VolumeSnapshot]
+    // nil is a failed read; an empty array means no volume controls.
+    func volumeValues(for device: AudioInputDevice) -> [VolumeSnapshot]?
     func writeVolumeValues(_ values: [VolumeSnapshot], for device: AudioInputDevice) -> Bool
 }
 
@@ -54,8 +55,9 @@ final class CoreAudioDevicePropertyAccess: AudioDevicePropertyAccess {
         }
     }
 
-    func volumeValues(for device: AudioInputDevice) -> [VolumeSnapshot] {
-        volumeAddresses(for: device).compactMap { address in
+    func volumeValues(for device: AudioInputDevice) -> [VolumeSnapshot]? {
+        var values: [VolumeSnapshot] = []
+        for address in volumeAddresses(for: device) {
             var mutableAddress = address
             var value: Float = 0
             var dataSize = UInt32(MemoryLayout<Float>.size)
@@ -63,8 +65,10 @@ final class CoreAudioDevicePropertyAccess: AudioDevicePropertyAccess {
             else {
                 return nil
             }
-            return VolumeSnapshot(element: address.mElement, value: value)
+            guard value.isFinite, (0...1).contains(value) else { return nil }
+            values.append(VolumeSnapshot(element: address.mElement, value: value))
         }
+        return values
     }
 
     func writeVolumeValues(_ values: [VolumeSnapshot], for device: AudioInputDevice) -> Bool {
@@ -97,12 +101,7 @@ final class CoreAudioDevicePropertyAccess: AudioDevicePropertyAccess {
             element: kAudioObjectPropertyElementMain
         )
         if AudioObjectHasProperty(device.objectID, withUnsafePointer(to: master, { $0 })) {
-            var address = master
-            var dataSize = UInt32(MemoryLayout<Float>.size)
-            var value: Float = 0
-            if AudioObjectGetPropertyData(device.objectID, &address, 0, nil, &dataSize, &value) == noErr {
-                return [master]
-            }
+            return [master]
         }
 
         return (1...max(1, device.inputChannelCount)).map { channel in
@@ -117,7 +116,7 @@ final class CoreAudioDevicePropertyAccess: AudioDevicePropertyAccess {
     }
 }
 
-extension CoreAudioDeviceManager {
+extension CoreAudioDeviceMonitor {
     func stringProperty(_ objectID: AudioObjectID, selector: AudioObjectPropertySelector) -> String? {
         var address = audioPropertyAddress(selector)
         var value: Unmanaged<CFString>?

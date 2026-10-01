@@ -27,15 +27,15 @@ Needs Xcode and `swift-format`.
 
 - `App/` is the composition root and AppKit status-item bridge.
 - `Features/Mute/` contains the observable model and pure status mapping.
-- `Audio/` owns the Core Audio adapter and audio-domain types; the model uses `AudioDeviceManaging`, while mute-property I/O is injectable through `AudioDevicePropertyAccess`.
+- `Audio/` owns the Core Audio adapter and audio-domain types; the model uses `AudioDeviceManaging`, while property I/O and monitoring are injectable through `AudioDevicePropertyAccess` and `AudioDeviceMonitoring`.
 - `Services/Storage/` owns UserDefaults persistence; `Services/System/` wraps login-item and shortcut APIs.
 - `State/` holds presentation state, while `UI/` contains the menu-bar, HUD, and reusable SwiftUI views.
-- `Tests/MicMuterCoreTests/` exercises model behavior, status mapping, storage, and mute fallback with simulated device properties.
+- `Tests/MicMuterCoreTests/` exercises model behavior, status mapping, storage, mute recovery, and monitoring with simulated devices. `Tests/MicMuterAppTests/` checks the menu-bar icon without bundled assets.
 
 `AppDelegate` wires the concrete services into `MicMuterModel`. The model depends on protocols rather than AppKit, ServiceManagement, or UserDefaults directly. The SwiftPM core target excludes the app and UI so the same non-UI code can be tested independently; the app itself is built by the Xcode project.
 
 - `make build` builds the app with Xcode.
-- `make test` runs unit tests for status presentation, status mapping, persistence, and model behavior.
+- `make test` runs core tests and the AppKit icon smoke test. Interactive checks are listed in `Tests/MANUAL_TESTS.md`.
 - `make lint` checks Swift sources with `swift-format`.
 - `make install` builds from source and replaces `/Applications/Mic Muter.app`, then opens it. macOS may request an administrator password.
 - `make release VERSION=1.2.0` builds a universal `dist/Mic Muter.dmg`. `VERSION` defaults to `1.0.0`.

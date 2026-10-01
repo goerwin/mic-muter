@@ -2,13 +2,9 @@ import Foundation
 
 @MainActor
 protocol VolumeStoring: AnyObject {
-    func saveInputLevel(_ values: [VolumeSnapshot], forDeviceUID uid: String)
-    func savedInputLevel(forDeviceUID uid: String) -> [VolumeSnapshot]?
-    func clearSavedInputLevel(forDeviceUID uid: String)
-    func isFallbackMuteActive(forDeviceUID uid: String) -> Bool
-    func setFallbackMuteActive(_ isActive: Bool, forDeviceUID uid: String)
-    func isRestorePending(forDeviceUID uid: String) -> Bool
-    func setRestorePending(_ isPending: Bool, forDeviceUID uid: String)
+    func fallbackState(forDeviceUID uid: String) -> VolumeFallbackState?
+    func saveFallbackState(_ state: VolumeFallbackState, forDeviceUID uid: String) throws
+    func clearFallbackState(forDeviceUID uid: String)
 }
 
 @MainActor
@@ -16,44 +12,39 @@ final class VolumeStore: VolumeStoring {
     private let fallbackMutePrefix = "mutedByInputVolume."
     private let savedVolumePrefix = "savedInputVolume."
     private let restorePendingPrefix = "inputVolumeRestorePending."
+    private let statePrefix = "inputVolumeFallback."
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
     }
 
-    func saveInputLevel(_ values: [VolumeSnapshot], forDeviceUID uid: String) {
-        let saved = SavedVolume(values: values)
-        guard let data = try? JSONEncoder().encode(saved) else { return }
-        defaults.set(data, forKey: savedVolumePrefix + uid)
-    }
-
-    func savedInputLevel(forDeviceUID uid: String) -> [VolumeSnapshot]? {
+    func fallbackState(forDeviceUID uid: String) -> VolumeFallbackState? {
+        if let data = defaults.data(forKey: statePrefix + uid) {
+            return try? JSONDecoder().decode(VolumeFallbackState.self, from: data)
+        }
         guard let data = defaults.data(forKey: savedVolumePrefix + uid) else { return nil }
         guard let saved = try? JSONDecoder().decode(SavedVolume.self, from: data) else { return nil }
-        return saved.values
+        let phase: VolumeFallbackState.Phase =
+            defaults.bool(forKey: restorePendingPrefix + uid) ? .restoring : .muted
+        return VolumeFallbackState(values: saved.values, phase: phase)
     }
 
-    func clearSavedInputLevel(forDeviceUID uid: String) {
+    func saveFallbackState(_ state: VolumeFallbackState, forDeviceUID uid: String) throws {
+        let data = try JSONEncoder().encode(state)
+        defaults.set(data, forKey: statePrefix + uid)
+        clearLegacyState(forDeviceUID: uid)
+    }
+
+    func clearFallbackState(forDeviceUID uid: String) {
+        defaults.removeObject(forKey: statePrefix + uid)
+        clearLegacyState(forDeviceUID: uid)
+    }
+
+    private func clearLegacyState(forDeviceUID uid: String) {
         defaults.removeObject(forKey: savedVolumePrefix + uid)
         defaults.removeObject(forKey: fallbackMutePrefix + uid)
         defaults.removeObject(forKey: restorePendingPrefix + uid)
-    }
-
-    func isFallbackMuteActive(forDeviceUID uid: String) -> Bool {
-        defaults.bool(forKey: fallbackMutePrefix + uid)
-    }
-
-    func setFallbackMuteActive(_ isActive: Bool, forDeviceUID uid: String) {
-        defaults.set(isActive, forKey: fallbackMutePrefix + uid)
-    }
-
-    func isRestorePending(forDeviceUID uid: String) -> Bool {
-        defaults.bool(forKey: restorePendingPrefix + uid)
-    }
-
-    func setRestorePending(_ isPending: Bool, forDeviceUID uid: String) {
-        defaults.set(isPending, forKey: restorePendingPrefix + uid)
     }
 }
 

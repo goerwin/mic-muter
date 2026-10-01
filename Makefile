@@ -28,6 +28,8 @@ build:
 test:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache"
 	SWIFTPM_MODULECACHE_OVERRIDE="$(CURDIR)/$(BUILD_DIR)/SwiftPMModuleCache" swift test --scratch-path "$(BUILD_DIR)/SwiftPM"
+	xcrun swiftc -parse-as-library -o "$(BUILD_DIR)/MenuBarIconSmokeTest" Sources/MicMuter/State/MicStatus.swift Sources/MicMuter/UI/Components/MicGlyph.swift Sources/MicMuter/UI/MenuBar/MenuBarIcon.swift Tests/MicMuterAppTests/MenuBarIconSmokeTest.swift
+	"$(BUILD_DIR)/MenuBarIconSmokeTest"
 
 lint:
 	xcrun swift-format lint --configuration .swift-format --strict --recursive Package.swift Sources Tests

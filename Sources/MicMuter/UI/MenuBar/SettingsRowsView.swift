@@ -25,6 +25,20 @@ struct SettingsRowsView: View {
                 )
                 .toggleStyle(.checkbox)
 
+                if model.launchAtLoginStatus == .requiresApproval {
+                    Text("Allow Mic Muter in Login Items settings to finish enabling it.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Button("Open Login Items Settings", action: model.openLoginItemSettings)
+                        .font(.caption)
+                } else if model.launchAtLoginStatus == .unavailable {
+                    Text("Launch at Login is unavailable. Move the app to Applications and try again.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 if let launchAtLoginError = model.launchAtLoginError {
                     Text(launchAtLoginError)
                         .font(.caption)

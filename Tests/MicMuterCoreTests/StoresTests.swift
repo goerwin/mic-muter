@@ -31,30 +31,22 @@ final class StoresTests: XCTestCase {
         XCTAssertNil(store.selectedDeviceNameSnapshot)
     }
 
-    func testVolumeStoreRoundTrip() {
+    func testVolumeStoreRoundTrip() throws {
         let defaults = freshDefaults()
         let store = VolumeStore(defaults: defaults)
         let uid = "dev-1"
 
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: uid))
-        XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: uid))
-        XCTAssertFalse(store.isRestorePending(forDeviceUID: uid))
-
-        store.saveInputLevel([VolumeSnapshot(element: 1, value: 0.5)], forDeviceUID: uid)
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: uid), [VolumeSnapshot(element: 1, value: 0.5)])
-
-        store.setFallbackMuteActive(true, forDeviceUID: uid)
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: uid))
-        store.setRestorePending(true, forDeviceUID: uid)
-        XCTAssertTrue(store.isRestorePending(forDeviceUID: uid))
-
-        store.clearSavedInputLevel(forDeviceUID: uid)
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: uid))
-        XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: uid))
-        XCTAssertFalse(store.isRestorePending(forDeviceUID: uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: uid))
+        for phase in [VolumeFallbackState.Phase.muting, .muted, .restoring] {
+            let state = VolumeFallbackState(values: [VolumeSnapshot(element: 1, value: 0.5)], phase: phase)
+            try store.saveFallbackState(state, forDeviceUID: uid)
+            XCTAssertEqual(VolumeStore(defaults: defaults).fallbackState(forDeviceUID: uid), state)
+        }
+        store.clearFallbackState(forDeviceUID: uid)
+        XCTAssertNil(store.fallbackState(forDeviceUID: uid))
     }
 
-    func testVolumeStoreReadsExistingSavedVolumeFormat() {
+    func testVolumeStoreReadsExistingSavedVolumeFormat() throws {
         let defaults = freshDefaults()
         let uid = "legacy-device"
         let legacyData = #"{"values":[{"element":1,"value":0.75}]}"#.data(using: .utf8)!
@@ -62,8 +54,16 @@ final class StoresTests: XCTestCase {
         defaults.set(true, forKey: "mutedByInputVolume." + uid)
         let store = VolumeStore(defaults: defaults)
 
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: uid), [VolumeSnapshot(element: 1, value: 0.75)])
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: uid))
+        XCTAssertEqual(store.fallbackState(forDeviceUID: uid)?.values, [VolumeSnapshot(element: 1, value: 0.75)])
+        XCTAssertEqual(store.fallbackState(forDeviceUID: uid)?.phase, .muted)
+        defaults.set(true, forKey: "inputVolumeRestorePending." + uid)
+        let state = try XCTUnwrap(store.fallbackState(forDeviceUID: uid))
+        XCTAssertEqual(state.pendingMute, false)
+        try store.saveFallbackState(state, forDeviceUID: uid)
+        XCTAssertNil(defaults.object(forKey: "savedInputVolume." + uid))
+        XCTAssertEqual(VolumeStore(defaults: defaults).fallbackState(forDeviceUID: uid), state)
+        store.clearFallbackState(forDeviceUID: uid)
+        XCTAssertNil(store.fallbackState(forDeviceUID: uid))
     }
 
     func testSettingsStoreRoundTrip() {

@@ -49,15 +49,14 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
             properties.volumeValues(for: device),
             originalLevels.map { VolumeSnapshot(element: $0.element, value: 0) }
         )
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: device.uid))
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.phase, .muted)
         XCTAssertEqual(manager.status(for: device), .muted)
 
         try manager.setMuted(false, for: device)
 
         XCTAssertEqual(properties.volumeValues(for: device), originalLevels)
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: device.uid))
-        XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: device.uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: device.uid))
     }
 
     func testWritableHardwareMuteTakesPrecedenceOverVolumeFallback() throws {
@@ -72,7 +71,7 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
 
         XCTAssertEqual(properties.muteValues[device.uid], true)
         XCTAssertTrue(properties.volumeWriteAttempts.isEmpty)
-        XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: device.uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: device.uid))
     }
 
     func testReadOnlyVolumesAreNotUsedAsMuteFallback() {
@@ -87,7 +86,7 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
         XCTAssertFalse(manager.canControl(device))
         XCTAssertThrowsError(try manager.setMuted(true, for: device))
         XCTAssertTrue(properties.volumeWriteAttempts.isEmpty)
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: device.uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: device.uid))
     }
 
     func testFailedPartialMuteWriteRetainsSnapshotForRetry() throws {
@@ -102,14 +101,13 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
 
         XCTAssertThrowsError(try manager.setMuted(true, for: device))
         XCTAssertEqual(properties.volumeValuesByUID[device.uid]?.first?.value, 0)
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: device.uid))
-        XCTAssertTrue(store.isRestorePending(forDeviceUID: device.uid))
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.phase, .muting)
         XCTAssertEqual(manager.status(for: device), .unknown)
 
         // A property listener refresh must not discard the snapshot after a partial write.
         manager.reconcileStaleFallbackState(for: device)
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
 
         // Retry the user's mute action: restore the old level, then mute again.
         try manager.setMuted(true, for: device)
@@ -117,9 +115,8 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
             properties.volumeValues(for: device),
             originalLevels.map { VolumeSnapshot(element: $0.element, value: 0) }
         )
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: device.uid))
-        XCTAssertFalse(store.isRestorePending(forDeviceUID: device.uid))
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.phase, .muted)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
     }
 
     func testFailedPartialRestoreRetainsSnapshotAcrossRefresh() throws {
@@ -131,17 +128,16 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
         properties.volumeWriteOutcomes = [.failure(applying: [1])]
 
         XCTAssertThrowsError(try manager.setMuted(false, for: device))
-        XCTAssertTrue(store.isRestorePending(forDeviceUID: device.uid))
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.phase, .restoring)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
         XCTAssertEqual(manager.status(for: device), .unknown)
 
         manager.reconcileStaleFallbackState(for: device)
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
 
         try manager.setMuted(false, for: device)
         XCTAssertEqual(properties.volumeValues(for: device), originalLevels)
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: device.uid))
-        XCTAssertFalse(store.isRestorePending(forDeviceUID: device.uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: device.uid))
     }
 
     func testStatusIsReadOnlyAndRefreshClearsExternallyChangedFallbackState() throws {
@@ -156,11 +152,62 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
         ]
 
         XCTAssertEqual(manager.status(for: device), .unmuted)
-        XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: device.uid))
-        XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.phase, .muted)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
 
         manager.reconcileStaleFallbackState(for: device)
-        XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: device.uid))
-        XCTAssertNil(store.savedInputLevel(forDeviceUID: device.uid))
+        XCTAssertNil(store.fallbackState(forDeviceUID: device.uid))
+    }
+
+    func testUnreadableOrPartialVolumesPreserveRecoveryAndDoNotConfirmMute() throws {
+        let device = makeDevice()
+        let properties = MockAudioDevicePropertyAccess()
+        configureWritableVolumes(properties, for: device)
+        let (manager, store) = makeManager(properties: properties)
+        try manager.setMuted(true, for: device)
+
+        for values in [[], [VolumeSnapshot(element: 1, value: 0)]] {
+            properties.volumeValuesByUID[device.uid] = values
+            manager.reconcileStaleFallbackState(for: device)
+            XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
+            XCTAssertEqual(manager.status(for: device), .unknown)
+        }
+        properties.unreadableVolumeUIDs.insert(device.uid)
+        manager.reconcileStaleFallbackState(for: device)
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
+        XCTAssertEqual(manager.status(for: device), .unknown)
+        properties.unreadableVolumeUIDs.remove(device.uid)
+        properties.volumeValuesByUID[device.uid] = originalLevels.map { VolumeSnapshot(element: $0.element, value: 0) }
+        try manager.setMuted(false, for: device)
+        XCTAssertEqual(properties.volumeValues(for: device), originalLevels)
+    }
+
+    func testMuteWhileFallbackReadIsUnknownNeverOverwritesSnapshot() throws {
+        let device = makeDevice()
+        let properties = MockAudioDevicePropertyAccess()
+        configureWritableVolumes(properties, for: device)
+        let (manager, store) = makeManager(properties: properties)
+        try manager.setMuted(true, for: device)
+        properties.unreadableVolumeUIDs.insert(device.uid)
+        let attempts = properties.volumeWriteAttempts.count
+
+        XCTAssertThrowsError(try manager.setMuted(true, for: device))
+        XCTAssertEqual(store.fallbackState(forDeviceUID: device.uid)?.values, originalLevels)
+        XCTAssertEqual(properties.volumeWriteAttempts.count, attempts)
+    }
+
+    func testInvalidVolumeReadNeverConfirmsMuteOrWritesHardware() {
+        let device = makeDevice()
+        let properties = MockAudioDevicePropertyAccess()
+        configureWritableVolumes(properties, for: device)
+        let (manager, _) = makeManager(properties: properties)
+        for value in [Float.nan, .infinity, -0.1, 1.1] {
+            properties.volumeValuesByUID[device.uid] = [
+                VolumeSnapshot(element: 1, value: value), VolumeSnapshot(element: 2, value: 0),
+            ]
+            XCTAssertEqual(manager.status(for: device), .unknown)
+            XCTAssertThrowsError(try manager.setMuted(true, for: device))
+        }
+        XCTAssertTrue(properties.volumeWriteAttempts.isEmpty)
     }
 }

@@ -37,4 +37,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.model = model
         statusBar = StatusBarController(model: model)
     }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        model?.stop()
+    }
+
+    func applicationDidBecomeActive(_ notification: Notification) {
+        model?.refreshLoginItemState()
+    }
 }

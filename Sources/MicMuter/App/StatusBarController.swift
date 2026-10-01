@@ -53,6 +53,7 @@ final class StatusBarController: NSObject {
             return
         }
 
+        model.refreshLoginItemState()
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         NSApp.activate(ignoringOtherApps: true)

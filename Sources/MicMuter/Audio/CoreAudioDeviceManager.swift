@@ -1,9 +1,11 @@
 import CoreAudio
 import Foundation
+import OSLog
 
 @MainActor
 final class CoreAudioDeviceManager {
     struct ListenerRegistration {
+        let id: UUID
         let objectID: AudioObjectID
         let address: AudioObjectPropertyAddress
         let block: AudioObjectPropertyListenerBlock
@@ -15,61 +17,98 @@ final class CoreAudioDeviceManager {
 
     let systemObject = AudioObjectID(kAudioObjectSystemObject)
     var listeners: [String: ListenerRegistration] = [:]
+    let monitor: any AudioDeviceMonitoring
+    var isMonitoring = false
+    var refreshTask: Task<Void, Never>?
+    var retryTask: Task<Void, Never>?
+    var topologyChanged = false
+    var defaultInputChanged = false
+    var changedDeviceUIDs: Set<String> = []
+    var failedListenerKeys: Set<String> = []
+    let logger = Logger(subsystem: "com.goerwin.MicMuter", category: "AudioMonitoring")
     private let volumeStore: any VolumeStoring
     private let propertyAccess: any AudioDevicePropertyAccess
 
-    init(volumeStore: any VolumeStoring, propertyAccess: any AudioDevicePropertyAccess) {
+    init(
+        volumeStore: any VolumeStoring, propertyAccess: any AudioDevicePropertyAccess,
+        monitor: (any AudioDeviceMonitoring)? = nil
+    ) {
         self.volumeStore = volumeStore
         self.propertyAccess = propertyAccess
+        self.monitor = monitor ?? CoreAudioDeviceMonitor()
     }
 
     func startMonitoring() {
+        guard !isMonitoring else { return }
+        isMonitoring = true
+        refresh()
+    }
+
+    func stopMonitoring() {
+        isMonitoring = false
+        refreshTask?.cancel()
+        refreshTask = nil
+        retryTask?.cancel()
+        retryTask = nil
+        topologyChanged = false
+        defaultInputChanged = false
+        changedDeviceUIDs.removeAll()
+        for key in Array(listeners.keys) { removeListener(key: key) }
+        failedListenerKeys.removeAll()
+    }
+
+    private func registerSystemListeners() {
         addListener(
             key: "system.devices",
             objectID: systemObject,
-            address: audioPropertyAddress(kAudioHardwarePropertyDevices)
+            address: audioPropertyAddress(kAudioHardwarePropertyDevices), change: .topology
         )
         addListener(
             key: "system.defaultInput",
             objectID: systemObject,
-            address: audioPropertyAddress(kAudioHardwarePropertyDefaultInputDevice)
+            address: audioPropertyAddress(kAudioHardwarePropertyDefaultInputDevice), change: .defaultInput
         )
-        refresh()
     }
 
     func refresh() {
-        let newDevices = enumerateInputDevices()
-        let newUIDs = Set(newDevices.map(\.uid))
-        let oldUIDs = Set(inputDevices.map(\.uid))
+        guard isMonitoring else { return }
+        registerSystemListeners()
+        let newDevices = monitor.enumerateInputDevices()
 
-        for device in inputDevices where !newUIDs.contains(device.uid) {
+        for device in inputDevices
+        where !newDevices.contains(where: { $0.uid == device.uid && $0.objectID == device.objectID }) {
             removeDeviceListeners(for: device)
         }
-        for device in newDevices where !oldUIDs.contains(device.uid) {
+        for device in newDevices {
             addListener(
                 key: "device.\(device.uid).mute",
                 objectID: device.objectID,
                 address: audioPropertyAddress(
                     kAudioDevicePropertyMute,
-                    scope: kAudioDevicePropertyScopeInput
-                )
+                    scope: kAudioDevicePropertyScopeInput, element: kAudioObjectPropertyElementWildcard
+                ), change: .device(device.uid)
             )
             addListener(
                 key: "device.\(device.uid).volume",
                 objectID: device.objectID,
                 address: audioPropertyAddress(
                     kAudioDevicePropertyVolumeScalar,
-                    scope: kAudioDevicePropertyScopeInput
-                )
+                    scope: kAudioDevicePropertyScopeInput, element: kAudioObjectPropertyElementWildcard
+                ), change: .device(device.uid)
             )
         }
 
         inputDevices = newDevices
-        defaultInputUID = defaultInputDeviceID().flatMap { id in
-            newDevices.first(where: { $0.objectID == id })?.uid
-        }
+        refreshDefaultInput()
         reconcileStaleFallbackState()
         onChange?()
+        scheduleListenerRetry()
+    }
+
+    func refreshDefaultInput() {
+        defaultInputUID = monitor.defaultInputDeviceID().flatMap { id in
+            inputDevices.first(where: { $0.objectID == id })?.uid
+        }
     }
 
     // Clear externally resolved fallback mutes here so status queries stay read-only.
@@ -80,17 +119,24 @@ final class CoreAudioDeviceManager {
     }
 
     func reconcileStaleFallbackState(for device: AudioInputDevice) {
-        guard volumeStore.isFallbackMuteActive(forDeviceUID: device.uid),
-            !volumeStore.isRestorePending(forDeviceUID: device.uid)
+        guard let saved = volumeStore.fallbackState(forDeviceUID: device.uid), saved.phase == .muted,
+            let volumes = completeVolumeValues(for: device), !volumes.isEmpty,
+            volumes.map(\.element) == saved.values.map(\.element)
         else {
             return
         }
 
-        let volumes = propertyAccess.volumeValues(for: device)
-        let inputIsZero = !volumes.isEmpty && volumes.allSatisfy { $0.value <= 0.0001 }
-        if !inputIsZero {
-            volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
+        if !inputIsZero(volumes) {
+            volumeStore.clearFallbackState(forDeviceUID: device.uid)
         }
+    }
+
+    func state(for device: AudioInputDevice) -> AudioDeviceState {
+        let saved = volumeStore.fallbackState(forDeviceUID: device.uid)
+        return AudioDeviceState(
+            status: status(for: device, saved: saved), canControl: canControl(device),
+            hasSavedInputLevel: saved != nil, pendingMute: saved?.pendingMute
+        )
     }
 
     func canControl(_ device: AudioInputDevice) -> Bool {
@@ -98,42 +144,47 @@ final class CoreAudioDeviceManager {
     }
 
     func status(for device: AudioInputDevice) -> AudioDeviceStatus {
-        let muteValue = propertyAccess.muteValue(for: device)
-        let volumeValues = propertyAccess.volumeValues(for: device)
-        let inputIsZero = !volumeValues.isEmpty && volumeValues.allSatisfy { $0.value <= 0.0001 }
-        if volumeStore.isRestorePending(forDeviceUID: device.uid) {
-            return .unknown
-        }
+        status(for: device, saved: volumeStore.fallbackState(forDeviceUID: device.uid))
+    }
 
-        if volumeStore.isFallbackMuteActive(forDeviceUID: device.uid), inputIsZero {
-            return .muted
+    private func status(for device: AudioInputDevice, saved: VolumeFallbackState?) -> AudioDeviceStatus {
+        let muteValue = propertyAccess.muteValue(for: device)
+        if saved?.pendingMute != nil {
+            return .unknown
         }
 
         if muteValue == true {
             return .muted
         }
-        if muteValue == false {
-            return inputIsZero ? .inputSilent : .unmuted
+        guard let volumes = completeVolumeValues(for: device) else { return .unknown }
+        if let saved {
+            guard !volumes.isEmpty, volumes.map(\.element) == saved.values.map(\.element) else { return .unknown }
+            if inputIsZero(volumes) { return .muted }
         }
-        if !volumeValues.isEmpty {
-            return inputIsZero ? .inputSilent : .unmuted
+        if !volumes.isEmpty {
+            return inputIsZero(volumes) ? .inputSilent : .unmuted
         }
-        return .unknown
-    }
-
-    func hasSavedInputLevel(for device: AudioInputDevice) -> Bool {
-        volumeStore.savedInputLevel(forDeviceUID: device.uid) != nil
+        return muteValue == false ? .unmuted : .unknown
     }
 
     func setMuted(_ shouldMute: Bool, for device: AudioInputDevice) throws {
-        if volumeStore.isRestorePending(forDeviceUID: device.uid) {
-            try restoreInputLevel(for: device)
-            if !shouldMute { return }
+        if let saved = volumeStore.fallbackState(forDeviceUID: device.uid), saved.pendingMute != nil {
+            try restoreInputLevel(for: device, phase: shouldMute ? .muting : .restoring)
+            if !shouldMute {
+                onChange?()
+                return
+            }
         }
 
         if shouldMute {
+            if let saved = volumeStore.fallbackState(forDeviceUID: device.uid) {
+                guard let volumes = completeVolumeValues(for: device), !volumes.isEmpty,
+                    volumes.map(\.element) == saved.values.map(\.element)
+                else { throw AudioDeviceError.inputLevelReadFailed }
+                if inputIsZero(volumes) { return }
+                volumeStore.clearFallbackState(forDeviceUID: device.uid)
+            }
             if propertyAccess.canSetMute(for: device), propertyAccess.setMute(true, for: device) {
-                volumeStore.setFallbackMuteActive(false, forDeviceUID: device.uid)
                 onChange?()
                 return
             }
@@ -141,8 +192,9 @@ final class CoreAudioDeviceManager {
             return
         }
 
-        if volumeStore.isFallbackMuteActive(forDeviceUID: device.uid) {
+        if volumeStore.fallbackState(forDeviceUID: device.uid) != nil {
             try restoreInputLevel(for: device)
+            onChange?()
             return
         }
 
@@ -151,13 +203,9 @@ final class CoreAudioDeviceManager {
             return
         }
 
-        if propertyAccess.volumeValues(for: device).first?.value == 0 {
-            if volumeStore.savedInputLevel(forDeviceUID: device.uid) != nil {
-                try restoreInputLevel(for: device)
-            } else {
-                throw AudioDeviceError.missingSavedInputLevel
-            }
-            return
+        guard let volumes = completeVolumeValues(for: device) else { throw AudioDeviceError.inputLevelReadFailed }
+        if inputIsZero(volumes) {
+            throw AudioDeviceError.missingSavedInputLevel
         }
 
         throw AudioDeviceError.unsupported
@@ -168,41 +216,63 @@ final class CoreAudioDeviceManager {
         return !controls.isEmpty && controls.allSatisfy(\.isWritable)
     }
 
+    private func completeVolumeValues(for device: AudioInputDevice) -> [VolumeSnapshot]? {
+        let controls = propertyAccess.volumeProperties(for: device)
+        guard let values = propertyAccess.volumeValues(for: device),
+            values.map(\.element) == controls.map(\.element),
+            values.allSatisfy({ $0.value.isFinite && (0...1).contains($0.value) })
+        else { return nil }
+        return values
+    }
+
+    private func inputIsZero(_ values: [VolumeSnapshot]) -> Bool {
+        !values.isEmpty && values.allSatisfy { $0.value <= 0.0001 }
+    }
+
     private func muteByZeroingInput(for device: AudioInputDevice) throws {
         let controls = propertyAccess.volumeProperties(for: device)
-        let currentValues = propertyAccess.volumeValues(for: device)
-        guard !controls.isEmpty,
-            currentValues.map(\.element) == controls.map(\.element),
-            controls.allSatisfy(\.isWritable)
+        guard !controls.isEmpty, controls.allSatisfy(\.isWritable)
         else {
             throw AudioDeviceError.unsupported
         }
+        guard let currentValues = completeVolumeValues(for: device) else {
+            throw AudioDeviceError.inputLevelReadFailed
+        }
+        guard !inputIsZero(currentValues) else { throw AudioDeviceError.missingSavedInputLevel }
 
-        volumeStore.saveInputLevel(currentValues, forDeviceUID: device.uid)
-        volumeStore.setFallbackMuteActive(true, forDeviceUID: device.uid)
-        volumeStore.setRestorePending(false, forDeviceUID: device.uid)
+        try volumeStore.saveFallbackState(
+            VolumeFallbackState(values: currentValues, phase: .muting), forDeviceUID: device.uid
+        )
 
         let zeroValues = currentValues.map { VolumeSnapshot(element: $0.element, value: 0) }
         guard propertyAccess.writeVolumeValues(zeroValues, for: device) else {
             if propertyAccess.writeVolumeValues(currentValues, for: device) {
-                volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
-            } else {
-                volumeStore.setRestorePending(true, forDeviceUID: device.uid)
+                volumeStore.clearFallbackState(forDeviceUID: device.uid)
             }
             throw AudioDeviceError.inputLevelWriteFailed
         }
+        try volumeStore.saveFallbackState(
+            VolumeFallbackState(values: currentValues, phase: .muted), forDeviceUID: device.uid
+        )
         onChange?()
     }
 
-    private func restoreInputLevel(for device: AudioInputDevice) throws {
-        guard let savedVolume = volumeStore.savedInputLevel(forDeviceUID: device.uid) else {
+    private func restoreInputLevel(
+        for device: AudioInputDevice, phase: VolumeFallbackState.Phase = .restoring
+    ) throws {
+        guard var saved = volumeStore.fallbackState(forDeviceUID: device.uid) else {
             throw AudioDeviceError.missingSavedInputLevel
         }
-        guard propertyAccess.writeVolumeValues(savedVolume, for: device) else {
-            volumeStore.setRestorePending(true, forDeviceUID: device.uid)
+        let controls = propertyAccess.volumeProperties(for: device)
+        guard !saved.values.isEmpty, saved.values.map(\.element) == controls.map(\.element),
+            controls.allSatisfy(\.isWritable),
+            saved.values.allSatisfy({ $0.value.isFinite && (0...1).contains($0.value) })
+        else { throw AudioDeviceError.unsupported }
+        saved.phase = phase
+        try volumeStore.saveFallbackState(saved, forDeviceUID: device.uid)
+        guard propertyAccess.writeVolumeValues(saved.values, for: device) else {
             throw AudioDeviceError.inputLevelWriteFailed
         }
-        volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
-        onChange?()
+        volumeStore.clearFallbackState(forDeviceUID: device.uid)
     }
 }

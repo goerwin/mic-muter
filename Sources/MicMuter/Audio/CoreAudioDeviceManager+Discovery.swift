@@ -1,6 +1,21 @@
 import CoreAudio
 
-extension CoreAudioDeviceManager {
+@MainActor
+protocol AudioDeviceMonitoring: AnyObject {
+    func enumerateInputDevices() -> [AudioInputDevice]
+    func defaultInputDeviceID() -> AudioDeviceID?
+    func addListener(
+        objectID: AudioObjectID, address: AudioObjectPropertyAddress, block: @escaping AudioObjectPropertyListenerBlock
+    ) -> OSStatus
+    func removeListener(
+        objectID: AudioObjectID, address: AudioObjectPropertyAddress, block: @escaping AudioObjectPropertyListenerBlock
+    ) -> OSStatus
+}
+
+@MainActor
+final class CoreAudioDeviceMonitor: AudioDeviceMonitoring {
+    private let systemObject = AudioObjectID(kAudioObjectSystemObject)
+
     func enumerateInputDevices() -> [AudioInputDevice] {
         var address = audioPropertyAddress(kAudioHardwarePropertyDevices)
         var dataSize: UInt32 = 0

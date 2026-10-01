@@ -23,6 +23,13 @@ struct MuteControlView: View {
             Text(model.status.title)
                 .font(.headline)
 
+            if model.isRecoveryPending {
+                Text("Click again to retry the microphone change.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+
             if model.status == .inputSilent, model.isInputLevelZeroWithoutSavedValue {
                 Text("Raise the input level in Sound settings to send audio.")
                     .font(.caption)
@@ -52,7 +59,8 @@ struct MuteControlView: View {
     }
 
     private var hint: String {
-        switch model.status {
+        if model.isRecoveryPending { return "Retry the pending microphone change" }
+        return switch model.status {
         case .muted:
             "Unmute the selected input device"
         case .unmuted, .unknown:
