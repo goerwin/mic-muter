@@ -67,13 +67,6 @@ final class MicMuterModel {
             ?? (selectedDeviceUID == nil ? "No input device" : selectedDeviceNameSnapshot ?? "Selected microphone")
     }
 
-    var selectedInputDescription: String {
-        if selectedDeviceUID == nil {
-            return selectedDevice == nil ? "No default input is available" : "Default input"
-        }
-        return selectedDevice == nil ? "Unavailable until reconnected" : "Selected input device"
-    }
-
     var isSelectedDeviceDisconnected: Bool {
         selectedDeviceUID != nil && selectedDevice == nil
     }

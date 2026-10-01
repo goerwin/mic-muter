@@ -1,4 +1,3 @@
-import AppKit
 import KeyboardShortcuts
 import SwiftUI
 
@@ -19,68 +18,48 @@ struct MenuPopoverView: View {
     @State private var showingAbout = false
 
     var body: some View {
-        mainContent
-            .padding(16)
-            .frame(width: 338)
-            .background(.regularMaterial)
-    }
-
-    private var mainContent: some View {
-        VStack(spacing: 14) {
-            header
-            statusCard
-            devicePicker
+        VStack(alignment: .leading, spacing: 14) {
+            muteControl
+            inputDevicePicker
+            Divider()
             shortcutRow
-            Divider().padding(.vertical, 1)
             launchAtLoginRow
-            aboutSection
-            footer
-        }
-    }
-
-    private var header: some View {
-        HStack(spacing: 10) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 32, height: 32)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Mic Muter")
-                    .font(.system(.headline, design: .rounded, weight: .semibold))
-                Text("Microphone control")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            DisclosureGroup("About", isExpanded: $showingAbout) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("Mic Muter")
+                    Text("Version \(appVersion)")
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
             }
-            Spacer(minLength: 0)
-            Circle()
-                .fill(statusIndicatorColor)
-                .frame(width: 8, height: 8)
-                .accessibilityHidden(true)
+            HStack {
+                Spacer()
+                Button("Quit", systemImage: "power", action: model.terminate)
+                    .keyboardShortcut("q", modifiers: .command)
+            }
         }
+        .padding(16)
+        .frame(width: 320)
     }
 
-    private var statusCard: some View {
-        VStack(spacing: 10) {
+    private var muteControl: some View {
+        VStack(spacing: 8) {
             Button(action: model.toggleMute) {
                 Image(systemName: model.status.menuBarSymbol)
-                    .font(.system(size: 54, weight: .medium))
+                    .font(.system(size: 48, weight: .medium))
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(model.status.menuBarTint)
-                    .frame(width: 132, height: 132)
-                    .background(
-                        model.status.menuBarTint.opacity(0.10),
-                        in: Circle()
-                    )
-                    .contentShape(Circle())
+                    .frame(width: 92, height: 72)
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+            .tint(model.status.menuBarTint)
             .disabled(!model.canToggleSelectedDevice)
             .accessibilityLabel(model.status.title)
             .accessibilityHint(toggleAccessibilityHint)
 
             Text(model.status.title)
-                .font(.system(.title3, design: .rounded, weight: .semibold))
+                .font(.headline)
 
             if model.status == .inputSilent && model.isInputLevelZeroWithoutSavedValue {
                 Text("Raise the input level in Sound settings to send audio.")
@@ -105,181 +84,76 @@ struct MenuPopoverView: View {
                     .accessibilityAddTraits(.updatesFrequently)
             }
         }
-        .padding(14)
         .frame(maxWidth: .infinity)
-        .background(Color.primary.opacity(0.045), in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
-    private var devicePicker: some View {
-        VStack(spacing: 0) {
-            Menu {
-                Button {
-                    model.selectDefaultInput()
-                } label: {
-                    selectionLabel(
-                        title: "Default Input",
-                        subtitle: model.currentDefaultDeviceName,
-                        isSelected: model.selectedDeviceUID == nil
-                    )
-                }
+    private var inputDevicePicker: some View {
+        LabeledContent("Input device") {
+            Picker("Input device", selection: selectedDeviceBinding) {
+                Text(defaultInputTitle)
+                    .tag(nil as String?)
 
                 if model.isSelectedDeviceDisconnected {
-                    Divider()
-                    Label("\(model.selectedInputName) · Unavailable", systemImage: "exclamationmark.circle")
+                    Text("\(model.selectedInputName) (Unavailable)")
+                        .tag(model.selectedDeviceUID)
                         .disabled(true)
                 }
 
-                if !model.devices.isEmpty {
-                    Divider()
-                    ForEach(model.devices) { device in
-                        Button {
-                            model.select(device)
-                        } label: {
-                            selectionLabel(
-                                title: device.name,
-                                subtitle: nil,
-                                isSelected: model.selectedDeviceUID == device.uid
-                            )
-                        }
-                    }
+                ForEach(model.devices) { device in
+                    Text(device.name)
+                        .tag(Optional(device.uid))
                 }
-            } label: {
-                HStack {
-                    Label("Input device", systemImage: "mic")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.primary)
-                    Spacer(minLength: 4)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-                .padding(.horizontal, 11)
-                .padding(.vertical, 10)
             }
-            .menuStyle(.borderlessButton)
-
-            Divider().padding(.leading, 43)
-
-            HStack(spacing: 10) {
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
-                    .frame(width: 22)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(model.selectedInputName)
-                        .font(.body.weight(.medium))
-                        .lineLimit(1)
-                    Text(model.selectedInputDescription)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 11)
-            .padding(.vertical, 9)
-            .accessibilityElement(children: .combine)
+            .labelsHidden()
+            .pickerStyle(.menu)
+            .accessibilityValue(model.selectedInputName)
         }
-        .background(Color.primary.opacity(0.04), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var shortcutRow: some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Keyboard shortcut")
-                    .font(.subheadline.weight(.medium))
-                Text(KeyboardShortcuts.Name.toggleMicrophone.shortcut == nil ? "Not set" : "Press to change")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 2)
+        LabeledContent("Keyboard shortcut") {
             KeyboardShortcuts.Recorder("Record shortcut", name: .toggleMicrophone)
                 .labelsHidden()
                 .accessibilityLabel("Record global mute shortcut")
-                .frame(maxWidth: 150)
         }
-        .padding(.horizontal, 2)
     }
 
     private var launchAtLoginRow: some View {
         VStack(alignment: .leading, spacing: 4) {
             Toggle(
+                "Launch at Login",
                 isOn: Binding(
                     get: { model.launchAtLoginEnabled },
                     set: { model.setLaunchAtLogin($0) }
                 )
-            ) {
-                Label("Launch at Login", systemImage: "arrow.turn.up.right")
-                    .font(.subheadline.weight(.medium))
-            }
-            .toggleStyle(.switch)
+            )
 
             if let launchAtLoginError = model.launchAtLoginError {
                 Text(launchAtLoginError)
                     .font(.caption)
                     .foregroundStyle(.orange)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.leading, 28)
             }
         }
     }
 
-    private var aboutSection: some View {
-        VStack(spacing: 0) {
-            Divider()
-
-            Button {
-                withAnimation(.easeInOut(duration: 0.18)) {
-                    showingAbout.toggle()
+    private var selectedDeviceBinding: Binding<String?> {
+        Binding(
+            get: { model.selectedDeviceUID },
+            set: { uid in
+                guard let uid else {
+                    model.selectDefaultInput()
+                    return
                 }
-            } label: {
-                HStack {
-                    Label("About", systemImage: "info.circle")
-                        .font(.subheadline)
-                    Spacer()
-                    Image(systemName: showingAbout ? "chevron.up" : "chevron.down")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tertiary)
-                }
-                .contentShape(Rectangle())
-                .padding(.vertical, 9)
+                guard let device = model.devices.first(where: { $0.uid == uid }) else { return }
+                model.select(device)
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(showingAbout ? "Collapse About details" : "Show About details")
-
-            if showingAbout {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Mic Muter")
-                        .font(.subheadline.weight(.semibold))
-                    Text("Version \(appVersion)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Text("A simple control for your selected microphone.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.leading, 28)
-                .padding(.bottom, 8)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
+        )
     }
 
-    private var footer: some View {
-        HStack {
-            Spacer()
-            Button(action: model.terminate) {
-                Label("Quit", systemImage: "power")
-                    .font(.subheadline)
-            }
-            .buttonStyle(.plain)
-            .keyboardShortcut("q", modifiers: .command)
-        }
-        .foregroundStyle(.secondary)
-        .padding(.top, 1)
+    private var defaultInputTitle: String {
+        let name = model.currentDefaultDeviceName
+        return name == "No input device" ? "Default Input" : "Default Input (\(name))"
     }
 
     private var appVersion: String {
@@ -298,37 +172,6 @@ struct MenuPopoverView: View {
             "This input device does not provide a writable mute control"
         case .disconnected:
             "Reconnect the selected input device to change its mute state"
-        }
-    }
-
-    private var statusIndicatorColor: Color {
-        switch model.status {
-        case .unmuted:
-            .blue
-        case .muted, .inputSilent:
-            .primary
-        case .unknown, .unsupported, .disconnected:
-            .orange
-        }
-    }
-
-    @ViewBuilder
-    private func selectionLabel(title: String, subtitle: String?, isSelected: Bool) -> some View {
-        HStack(spacing: 10) {
-            VStack(alignment: .leading, spacing: 1) {
-                Text(title)
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            Spacer(minLength: 12)
-            if isSelected {
-                Image(systemName: "checkmark")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.blue)
-            }
         }
     }
 }
