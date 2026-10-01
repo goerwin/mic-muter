@@ -6,6 +6,10 @@ final class MicStatusTests: XCTestCase {
     func testMutedAndUnmutedStatesUseDistinctSymbols() {
         XCTAssertEqual(MicStatus.muted.menuBarSymbol, "mic.slash.fill")
         XCTAssertEqual(MicStatus.unmuted.menuBarSymbol, "mic.fill")
+        XCTAssertTrue(MicStatus.muted.usesSlashSymbol)
+        XCTAssertFalse(MicStatus.unmuted.usesSlashSymbol)
+        XCTAssertTrue(MicStatus.unmuted.tintsMenuBarIcon)
+        XCTAssertFalse(MicStatus.muted.tintsMenuBarIcon)
     }
 
     func testOnlyActionableStatesCanToggle() {

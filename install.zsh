@@ -19,11 +19,29 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+quit_running_app() {
+	if ! pgrep -x "Mic Muter" >/dev/null 2>&1; then
+		return 0
+	fi
+
+	osascript -e 'tell application id "com.goerwin.MicMuter" to quit' >/dev/null 2>&1 || true
+	local attempt
+	for attempt in {1..25}; do
+		pgrep -x "Mic Muter" >/dev/null 2>&1 || return 0
+		sleep 0.2
+	done
+	killall "Mic Muter" >/dev/null 2>&1 || true
+	sleep 0.2
+	killall -9 "Mic Muter" >/dev/null 2>&1 || true
+}
+
 make -C "$project_root" build CONFIGURATION=Release
 if [[ ! -d "$app_source" ]]; then
 	print -u2 "The build did not produce an app at: $app_source"
 	exit 1
 fi
+
+quit_running_app
 
 sudo ditto "$app_source" "$temporary_app"
 if [[ -e "$app_destination" ]]; then
@@ -35,3 +53,4 @@ if [[ -e "$backup_app" ]]; then
 fi
 trap - EXIT INT TERM
 print "Installed Mic Muter to: $app_destination"
+open "$app_destination"

@@ -34,10 +34,23 @@ enum MicStatus: Equatable {
         }
     }
 
+    var usesSlashSymbol: Bool {
+        switch self {
+        case .muted, .inputSilent:
+            true
+        case .unmuted, .unknown, .unsupported, .disconnected:
+            false
+        }
+    }
+
+    var tintsMenuBarIcon: Bool {
+        self == .unmuted
+    }
+
     var menuBarTint: Color {
         switch self {
         case .unmuted:
-            .blue
+            .accentColor
         case .muted, .inputSilent:
             .primary
         case .unknown, .unsupported, .disconnected:

@@ -2,14 +2,23 @@ import SwiftUI
 
 @main
 struct MicMuterApp: App {
-    @State private var model = MicMuterModel()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra {
-            MenuPopoverView(model: model)
-        } label: {
-            MenuBarStatusItem(status: model.status)
+        Settings {
+            EmptyView()
         }
-        .menuBarExtraStyle(.window)
+    }
+}
+
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    private var model: MicMuterModel?
+    private var statusBar: StatusBarController?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        let model = MicMuterModel()
+        self.model = model
+        statusBar = StatusBarController(model: model)
     }
 }

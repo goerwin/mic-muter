@@ -1,59 +1,44 @@
 import KeyboardShortcuts
 import SwiftUI
 
-struct MenuBarStatusItem: View {
-    let status: MicStatus
-
-    var body: some View {
-        Image(systemName: status.menuBarSymbol)
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(status.menuBarTint)
-            .accessibilityLabel("Mic Muter. \(status.accessibilityDescription)")
-            .help("Mic Muter: \(status.title)")
-    }
-}
-
 struct MenuPopoverView: View {
     @Bindable var model: MicMuterModel
-    @State private var showingAbout = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             muteControl
             inputDevicePicker
             Divider()
-            shortcutRow
-            launchAtLoginRow
-            DisclosureGroup("About", isExpanded: $showingAbout) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text("Mic Muter")
-                    Text("Version \(appVersion)")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 10) {
+                shortcutRow
+                launchAtLoginRow
             }
             HStack {
+                Text("Mic Muter \(appVersion)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
-                Button("Quit", systemImage: "power", action: model.terminate)
+                Button("Quit", action: model.terminate)
                     .keyboardShortcut("q", modifiers: .command)
             }
         }
         .padding(16)
-        .frame(width: 320)
+        .frame(width: 280)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     private var muteControl: some View {
-        VStack(spacing: 8) {
+        VStack(spacing: 10) {
             Button(action: model.toggleMute) {
                 Image(systemName: model.status.menuBarSymbol)
-                    .font(.system(size: 48, weight: .medium))
-                    .symbolRenderingMode(.hierarchical)
-                    .frame(width: 92, height: 72)
             }
-            .buttonStyle(.bordered)
-            .controlSize(.large)
-            .tint(model.status.menuBarTint)
+            .buttonStyle(
+                CircularMuteButtonStyle(
+                    fill: muteButtonFill,
+                    symbol: muteButtonSymbol,
+                    isEnabled: model.canToggleSelectedDevice
+                )
+            )
             .disabled(!model.canToggleSelectedDevice)
             .accessibilityLabel(model.status.title)
             .accessibilityHint(toggleAccessibilityHint)
@@ -85,13 +70,29 @@ struct MenuPopoverView: View {
             }
         }
         .frame(maxWidth: .infinity)
+        .padding(.top, 4)
+        .padding(.bottom, 2)
+    }
+
+    private var muteButtonFill: Color {
+        model.status == .unmuted ? .accentColor : Color.primary.opacity(0.08)
+    }
+
+    private var muteButtonSymbol: Color {
+        model.status == .unmuted ? .white : .primary
     }
 
     private var inputDevicePicker: some View {
-        LabeledContent("Input device") {
-            Picker("Input device", selection: selectedDeviceBinding) {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Microphone")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            Picker("Microphone", selection: selectedDeviceBinding) {
                 Text(defaultInputTitle)
                     .tag(nil as String?)
+
+                Divider()
 
                 if model.isSelectedDeviceDisconnected {
                     Text("\(model.selectedInputName) (Unavailable)")
@@ -106,14 +107,18 @@ struct MenuPopoverView: View {
             }
             .labelsHidden()
             .pickerStyle(.menu)
+            .frame(maxWidth: .infinity)
             .accessibilityValue(model.selectedInputName)
         }
     }
 
     private var shortcutRow: some View {
-        LabeledContent("Keyboard shortcut") {
+        HStack {
+            Text("Shortcut")
+            Spacer()
             KeyboardShortcuts.Recorder("Record shortcut", name: .toggleMicrophone)
                 .labelsHidden()
+                .controlSize(.small)
                 .accessibilityLabel("Record global mute shortcut")
         }
     }
@@ -127,6 +132,7 @@ struct MenuPopoverView: View {
                     set: { model.setLaunchAtLogin($0) }
                 )
             )
+            .toggleStyle(.checkbox)
 
             if let launchAtLoginError = model.launchAtLoginError {
                 Text(launchAtLoginError)
@@ -153,7 +159,7 @@ struct MenuPopoverView: View {
 
     private var defaultInputTitle: String {
         let name = model.currentDefaultDeviceName
-        return name == "No input device" ? "Default Input" : "Default Input (\(name))"
+        return name == "No input device" ? "System Default" : "System Default (\(name))"
     }
 
     private var appVersion: String {
@@ -173,5 +179,31 @@ struct MenuPopoverView: View {
         case .disconnected:
             "Reconnect the selected input device to change its mute state"
         }
+    }
+}
+
+private struct CircularMuteButtonStyle: ButtonStyle {
+    var fill: Color
+    var symbol: Color
+    var isEnabled: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 28, weight: .medium))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(symbol)
+            .frame(width: 72, height: 72)
+            .background {
+                Circle()
+                    .fill(fill)
+            }
+            .overlay {
+                Circle()
+                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
+            }
+            .scaleEffect(configuration.isPressed ? 0.96 : 1)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+            .opacity(isEnabled ? 1 : 0.42)
+            .contentShape(Circle())
     }
 }
