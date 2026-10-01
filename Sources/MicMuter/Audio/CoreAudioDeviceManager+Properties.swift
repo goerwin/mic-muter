@@ -23,9 +23,9 @@ extension CoreAudioDeviceManager {
         return value != 0
     }
 
-    func readVolumeValues(for device: AudioInputDevice) -> [VolumeValue] {
+    func readVolumeValues(for device: AudioInputDevice) -> [VolumeSnapshot] {
         let addresses = volumeAddresses(for: device)
-        let values = addresses.compactMap { address -> VolumeValue? in
+        let values = addresses.compactMap { address -> VolumeSnapshot? in
             var propertyAddress = address
             var value: Float = 0
             var dataSize = UInt32(MemoryLayout<Float>.size)
@@ -41,7 +41,7 @@ extension CoreAudioDeviceManager {
             else {
                 return nil
             }
-            return VolumeValue(element: address.mElement, value: value)
+            return VolumeSnapshot(element: address.mElement, value: value)
         }
         return values
     }
@@ -105,7 +105,7 @@ extension CoreAudioDeviceManager {
         return AudioObjectSetPropertyData(objectID, &address, 0, nil, dataSize, &value)
     }
 
-    func writeVolumeValues(_ values: [VolumeValue], for device: AudioInputDevice) -> Bool {
+    func writeVolumeValues(_ values: [VolumeSnapshot], for device: AudioInputDevice) -> Bool {
         guard !values.isEmpty else { return false }
         var didWriteAll = true
         for volume in values {

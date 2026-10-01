@@ -2,12 +2,11 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class StatusBarController: NSObject, NSPopoverDelegate {
+final class StatusBarController: NSObject {
     private let model: MicMuterModel
     private let statusItem = NSStatusBar.system.statusItem(withLength: 22)
     private let popover = NSPopover()
     private var appearanceObserver: NSKeyValueObservation?
-    private var clickOutsideMonitor: Any?
 
     init(model: MicMuterModel) {
         self.model = model
@@ -16,8 +15,8 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         let hosting = NSHostingController(rootView: MenuPopoverView(model: model))
         hosting.sizingOptions = .preferredContentSize
         popover.contentViewController = hosting
+        // .transient already dismisses on outside click; no custom monitor needed.
         popover.behavior = .transient
-        popover.delegate = self
 
         statusItem.button?.target = self
         statusItem.button?.action = #selector(handleClick(_:))
@@ -31,16 +30,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
                 self?.updateButton()
             }
         }
-    }
-
-    deinit {
-        if let clickOutsideMonitor {
-            NSEvent.removeMonitor(clickOutsideMonitor)
-        }
-    }
-
-    func popoverDidClose(_ notification: Notification) {
-        stopClickOutsideMonitor()
     }
 
     @objc private func handleClick(_ sender: Any?) {
@@ -68,24 +57,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
         popover.contentViewController?.view.window?.makeKey()
         NSApp.activate(ignoringOtherApps: true)
-        startClickOutsideMonitor()
-    }
-
-    private func startClickOutsideMonitor() {
-        stopClickOutsideMonitor()
-        clickOutsideMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) {
-            [weak self] _ in
-            DispatchQueue.main.async {
-                self?.popover.performClose(nil)
-            }
-        }
-    }
-
-    private func stopClickOutsideMonitor() {
-        if let clickOutsideMonitor {
-            NSEvent.removeMonitor(clickOutsideMonitor)
-            self.clickOutsideMonitor = nil
-        }
     }
 
     private func observeModel() {

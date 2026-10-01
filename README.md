@@ -23,8 +23,19 @@ Releases are ad-hoc signed rather than notarized, so macOS blocks the first laun
 
 Needs Xcode and `swift-format`.
 
+### Architecture
+
+- `App/` is the composition root and AppKit status-item bridge.
+- `Features/Mute/` contains the observable model and pure status mapping.
+- `Audio/` owns the Core Audio adapter and audio-domain types; device access is behind `AudioDeviceManaging`.
+- `Services/Storage/` owns UserDefaults persistence; `Services/System/` wraps login-item and shortcut APIs.
+- `State/` holds presentation state, while `UI/` contains the menu-bar, HUD, and reusable SwiftUI views.
+- `Tests/MicMuterCoreTests/` exercises model behavior, status mapping, and storage without real devices or system settings.
+
+`AppDelegate` wires the concrete services into `MicMuterModel`. The model depends on protocols rather than AppKit, ServiceManagement, or UserDefaults directly. The SwiftPM core target excludes the app and UI so the same non-UI code can be tested independently; the app itself is built by the Xcode project.
+
 - `make build` builds the app with Xcode.
-- `make test` runs unit tests for mute state presentation and accessibility labels.
+- `make test` runs unit tests for status presentation, status mapping, persistence, and model behavior.
 - `make lint` checks Swift sources with `swift-format`.
 - `make install` builds from source and replaces `/Applications/Mic Muter.app`, then opens it. macOS may request an administrator password.
 - `make release VERSION=1.2.0` builds a universal `dist/Mic Muter.dmg`. `VERSION` defaults to `1.0.0`.

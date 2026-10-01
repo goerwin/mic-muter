@@ -1,22 +1,18 @@
-import AppKit
-import KeyboardShortcuts
+import Foundation
 import Observation
-import ServiceManagement
 
-extension KeyboardShortcuts.Name {
-    static let toggleMicrophone = Self("toggleMicrophone")
-}
-
+/// Source of truth for device selection, mute status and user settings.
+/// All side effects (persistence, login item, shortcuts, termination) go
+/// through injected collaborators so the model is unit-testable.
 @MainActor
 @Observable
 final class MicMuterModel {
-    private enum DefaultsKey {
-        static let selectedUID = "selectedInputDeviceUID"
-        static let selectedName = "selectedInputDeviceName"
-        static let showHUD = "showHUDOnToggle"
-    }
-
     private let audio: any AudioDeviceManaging
+    private let selectionStore: any DeviceSelectionStoring
+    private let settings: any SettingsStoring
+    private let loginService: any LoginItemServing
+    private let terminator: @MainActor () -> Void
+    private let onToggleFeedback: (@MainActor (MicStatus, String) -> Void)?
 
     private(set) var devices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
@@ -28,13 +24,24 @@ final class MicMuterModel {
     private(set) var launchAtLoginEnabled = false
     private(set) var showHUDOnToggle: Bool
 
-    var onToggleFeedback: ((MicStatus, String) -> Void)?
-
-    init(audio: (any AudioDeviceManaging)? = nil) {
-        self.audio = audio ?? CoreAudioDeviceManager()
-        selectedDeviceUID = UserDefaults.standard.string(forKey: DefaultsKey.selectedUID)
-        selectedDeviceNameSnapshot = UserDefaults.standard.string(forKey: DefaultsKey.selectedName)
-        showHUDOnToggle = UserDefaults.standard.bool(forKey: DefaultsKey.showHUD)
+    init(
+        audio: any AudioDeviceManaging,
+        selectionStore: any DeviceSelectionStoring,
+        settings: any SettingsStoring,
+        loginService: any LoginItemServing,
+        shortcutService: any ShortcutRegistering,
+        onToggleFeedback: (@MainActor (MicStatus, String) -> Void)? = nil,
+        terminator: @escaping @MainActor () -> Void
+    ) {
+        self.audio = audio
+        self.selectionStore = selectionStore
+        self.settings = settings
+        self.loginService = loginService
+        self.terminator = terminator
+        self.onToggleFeedback = onToggleFeedback
+        self.selectedDeviceUID = selectionStore.selectedDeviceUID
+        self.selectedDeviceNameSnapshot = selectionStore.selectedDeviceNameSnapshot
+        self.showHUDOnToggle = settings.showHUDOnToggle
 
         self.audio.onChange = { [weak self] in
             Task { @MainActor in
@@ -45,7 +52,7 @@ final class MicMuterModel {
         refreshFromAudio()
         refreshLoginAtLaunchState()
 
-        KeyboardShortcuts.onKeyUp(for: .toggleMicrophone) { [weak self] in
+        shortcutService.onToggle { [weak self] in
             Task { @MainActor [weak self] in
                 self?.toggleMute()
             }
@@ -90,8 +97,7 @@ final class MicMuterModel {
     func selectDefaultInput() {
         selectedDeviceUID = nil
         selectedDeviceNameSnapshot = nil
-        UserDefaults.standard.removeObject(forKey: DefaultsKey.selectedUID)
-        UserDefaults.standard.removeObject(forKey: DefaultsKey.selectedName)
+        selectionStore.clearSelection()
         errorMessage = nil
         refreshStatus()
     }
@@ -99,8 +105,7 @@ final class MicMuterModel {
     func select(_ device: AudioInputDevice) {
         selectedDeviceUID = device.uid
         selectedDeviceNameSnapshot = device.name
-        UserDefaults.standard.set(device.uid, forKey: DefaultsKey.selectedUID)
-        UserDefaults.standard.set(device.name, forKey: DefaultsKey.selectedName)
+        selectionStore.saveSelection(uid: device.uid, name: device.name)
         errorMessage = nil
         refreshStatus()
     }
@@ -112,29 +117,23 @@ final class MicMuterModel {
             return
         }
 
+        var didToggle = false
         do {
             try audio.setMuted(status != .muted, for: selectedDevice)
             errorMessage = nil
-            refreshFromAudio()
-            if showHUDOnToggle {
-                onToggleFeedback?(status, selectedInputName)
-            }
+            didToggle = true
         } catch {
             errorMessage = error.localizedDescription
-            refreshFromAudio()
-            if showHUDOnToggle {
-                onToggleFeedback?(status, selectedInputName)
-            }
+        }
+        refreshFromAudio()
+        if didToggle, showHUDOnToggle {
+            onToggleFeedback?(status, selectedInputName)
         }
     }
 
     func setLaunchAtLogin(_ isEnabled: Bool) {
         do {
-            if isEnabled {
-                try SMAppService.mainApp.register()
-            } else {
-                try SMAppService.mainApp.unregister()
-            }
+            try loginService.setEnabled(isEnabled)
             launchAtLoginError = nil
         } catch {
             launchAtLoginError = error.localizedDescription
@@ -144,11 +143,11 @@ final class MicMuterModel {
 
     func setShowHUDOnToggle(_ isEnabled: Bool) {
         showHUDOnToggle = isEnabled
-        UserDefaults.standard.set(isEnabled, forKey: DefaultsKey.showHUD)
+        settings.showHUDOnToggle = isEnabled
     }
 
     func terminate() {
-        NSApp.terminate(nil)
+        terminator()
     }
 
     private func refreshFromAudio() {
@@ -156,7 +155,7 @@ final class MicMuterModel {
         defaultInputUID = audio.defaultInputUID
         if let selectedDeviceUID, let device = device(for: selectedDeviceUID) {
             selectedDeviceNameSnapshot = device.name
-            UserDefaults.standard.set(device.name, forKey: DefaultsKey.selectedName)
+            selectionStore.saveNameSnapshot(device.name, for: selectedDeviceUID)
         }
         refreshStatus()
     }
@@ -171,20 +170,12 @@ final class MicMuterModel {
             status = .disconnected
             return
         }
-
-        switch audio.status(for: selectedDevice) {
-        case .muted:
-            status = .muted
-        case .unmuted:
-            status = .unmuted
-        case .inputSilent:
-            status = .inputSilent
-        case .unknown:
-            status = audio.canControl(selectedDevice) ? .unknown : .unsupported
-        }
+        let audioStatus = audio.status(for: selectedDevice)
+        let canControl = audioStatus != .unknown || audio.canControl(selectedDevice)
+        status = MicStatusMapper.map(audioStatus, canControl: canControl)
     }
 
     private func refreshLoginAtLaunchState() {
-        launchAtLoginEnabled = SMAppService.mainApp.status == .enabled
+        launchAtLoginEnabled = loginService.isEnabled
     }
 }

@@ -1,57 +1,61 @@
 import AppKit
 
+@MainActor
 enum MenuBarIcon {
     private static let canvasSize = NSSize(width: 18, height: 16)
-    private static var cache: [MicStatus: NSImage] = [:]
-    private static var cachedAppearance: String?
-    private static var cachedAccent: String?
+    private static var cache: [CacheKey: NSImage] = [:]
+
+    private struct CacheKey: Hashable {
+        let status: MicStatus
+        let appearance: String
+        let accent: String
+    }
 
     static func image(for status: MicStatus) -> NSImage {
-        let appearance = NSApp.effectiveAppearance.name.rawValue
-        let accent = NSColor.controlAccentColor.description
-        if cachedAppearance != appearance || cachedAccent != accent {
-            cache.removeAll()
-            cachedAppearance = appearance
-            cachedAccent = accent
-        }
-        if let cached = cache[status] { return cached }
+        let key = CacheKey(
+            status: status,
+            appearance: NSApp.effectiveAppearance.name.rawValue,
+            accent: status.tintsMenuBarIcon ? NSColor.controlAccentColor.description : "template"
+        )
 
+        if let cached = cache[key] {
+            return cached
+        }
+
+        let rendered = render(status: status)
+
+        // Bound the cache: 6 statuses x handful of appearances/accents.
+        if cache.count >= 48 { cache.removeAll(keepingCapacity: true) }
+        cache[key] = rendered
+        return rendered
+    }
+
+    private static func render(status: MicStatus) -> NSImage {
         let name = MicGlyph.assetName(isSlashed: status.isSlashed)
         guard let base = NSImage(named: name) else {
             return fallbackImage(for: status)
         }
 
-        let image: NSImage
         if status.tintsMenuBarIcon {
-            image = tintedImage(from: base, color: NSColor.controlAccentColor, canvasSize: canvasSize)
-        } else {
-            image = fittedImage(from: base, canvasSize: canvasSize, isTemplate: true, opacity: 0.55)
+            return tintedImage(from: base, color: .controlAccentColor)
         }
-        cache[status] = image
-        return image
+        return fittedImage(from: base, isTemplate: true, opacity: 0.55)
     }
 
-    private static func fittedImage(from base: NSImage, canvasSize: NSSize, isTemplate: Bool, opacity: CGFloat = 1) -> NSImage {
-        let vectorSize = MicGlyph.vectorSize
-        let scale = min(canvasSize.width / vectorSize.width, canvasSize.height / vectorSize.height)
-        let drawSize = NSSize(width: vectorSize.width * scale, height: vectorSize.height * scale)
-        let origin = NSPoint(x: (canvasSize.width - drawSize.width) / 2, y: (canvasSize.height - drawSize.height) / 2)
+    private static func fittedImage(from base: NSImage, isTemplate: Bool, opacity: CGFloat = 1) -> NSImage {
+        let drawRect = NSRect(origin: fittedOrigin, size: fittedSize)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
-        base.draw(in: NSRect(origin: origin, size: drawSize), from: .zero, operation: .sourceOver, fraction: opacity)
+        base.draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: opacity)
         image.unlockFocus()
         image.size = canvasSize
         image.isTemplate = isTemplate
         return image
     }
 
-    private static func tintedImage(from base: NSImage, color: NSColor, canvasSize: NSSize) -> NSImage {
-        let vectorSize = MicGlyph.vectorSize
-        let scale = min(canvasSize.width / vectorSize.width, canvasSize.height / vectorSize.height)
-        let drawSize = NSSize(width: vectorSize.width * scale, height: vectorSize.height * scale)
-        let origin = NSPoint(x: (canvasSize.width - drawSize.width) / 2, y: (canvasSize.height - drawSize.height) / 2)
-        let drawRect = NSRect(origin: origin, size: drawSize)
+    private static func tintedImage(from base: NSImage, color: NSColor) -> NSImage {
+        let drawRect = NSRect(origin: fittedOrigin, size: fittedSize)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
@@ -62,6 +66,17 @@ enum MenuBarIcon {
         image.size = canvasSize
         image.isTemplate = false
         return image
+    }
+
+    private static var fittedSize: NSSize {
+        let vectorSize = MicGlyph.vectorSize
+        let scale = min(canvasSize.width / vectorSize.width, canvasSize.height / vectorSize.height)
+        return NSSize(width: vectorSize.width * scale, height: vectorSize.height * scale)
+    }
+
+    private static var fittedOrigin: NSPoint {
+        let size = fittedSize
+        return NSPoint(x: (canvasSize.width - size.width) / 2, y: (canvasSize.height - size.height) / 2)
     }
 
     private static func fallbackImage(for status: MicStatus) -> NSImage {
@@ -102,7 +117,5 @@ enum MenuBarIcon {
 
     static func invalidateCache() {
         cache.removeAll()
-        cachedAppearance = nil
-        cachedAccent = nil
     }
 }

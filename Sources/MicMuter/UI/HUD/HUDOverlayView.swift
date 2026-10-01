@@ -25,18 +25,18 @@ struct HUDOverlayView: View {
             }
         }
         .padding(.horizontal, 24)
-        .frame(width: HUDOverlayController.panelSize.width, height: HUDOverlayController.panelSize.height)
+        .frame(width: HUDLayout.panelSize.width, height: HUDLayout.panelSize.height)
         .background {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: HUDLayout.cornerRadius, style: .continuous)
                 .fill(.regularMaterial)
                 .overlay {
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    RoundedRectangle(cornerRadius: HUDLayout.cornerRadius, style: .continuous)
                         .fill(Color.black.opacity(0.45))
                 }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: HUDLayout.cornerRadius, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: HUDLayout.cornerRadius, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.12), lineWidth: 1)
         }
         .accessibilityElement(children: .combine)

@@ -11,25 +11,20 @@ final class CoreAudioDeviceManager {
         let block: AudioObjectPropertyListenerBlock
     }
 
-    struct VolumeValue: Codable {
-        let element: UInt32
-        let value: Float
-    }
-
-    struct SavedVolume: Codable {
-        let values: [VolumeValue]
-    }
-
     // MARK: - State
 
     private(set) var inputDevices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
     var onChange: (() -> Void)?
 
+    // Shared with CoreAudioDeviceManager's focused extensions in sibling files.
     let systemObject = AudioObjectID(kAudioObjectSystemObject)
-    let savedVolumePrefix = "savedInputVolume."
-    let fallbackMutePrefix = "mutedByInputVolume."
+    let volumeStore: any VolumeStoring
     var listeners: [String: ListenerRegistration] = [:]
+
+    init(volumeStore: any VolumeStoring) {
+        self.volumeStore = volumeStore
+    }
 
     // MARK: - Monitoring
 
@@ -78,7 +73,22 @@ final class CoreAudioDeviceManager {
         defaultInputUID = defaultInputDeviceID().flatMap { id in
             newDevices.first(where: { $0.objectID == id })?.uid
         }
+        reconcileStaleFallbackState()
         onChange?()
+    }
+
+    /// Clears fallback-mute flags the user resolved externally (e.g. raised
+    /// the input level in System Settings). Kept out of `status(for:)` so
+    /// queries stay side-effect free.
+    private func reconcileStaleFallbackState() {
+        for device in inputDevices {
+            guard volumeStore.isFallbackMuteActive(forDeviceUID: device.uid) else { continue }
+            let volumes = readVolumeValues(for: device)
+            let inputIsZero = !volumes.isEmpty && volumes.allSatisfy { $0.value <= 0.0001 }
+            if !inputIsZero {
+                volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
+            }
+        }
     }
 
     // MARK: - Public API
@@ -91,13 +101,10 @@ final class CoreAudioDeviceManager {
         let muteValue = readMuteValue(device.objectID)
         let volumeValues = readVolumeValues(for: device)
         let inputIsZero = !volumeValues.isEmpty && volumeValues.allSatisfy { $0.value <= 0.0001 }
-        let fallbackMuteIsActive = UserDefaults.standard.bool(forKey: fallbackMutePrefix + device.uid)
+        let fallbackMuteIsActive = volumeStore.isFallbackMuteActive(forDeviceUID: device.uid)
 
         if fallbackMuteIsActive, inputIsZero {
             return .muted
-        }
-        if fallbackMuteIsActive, !inputIsZero {
-            clearSavedInputLevel(for: device)
         }
 
         if muteValue == true {
@@ -113,13 +120,13 @@ final class CoreAudioDeviceManager {
     }
 
     func hasSavedInputLevel(for device: AudioInputDevice) -> Bool {
-        savedVolume(for: device) != nil
+        volumeStore.savedInputLevel(forDeviceUID: device.uid) != nil
     }
 
     func setMuted(_ shouldMute: Bool, for device: AudioInputDevice) throws {
         if shouldMute {
             if canSetMute(device.objectID), setMuteValue(true, for: device.objectID) == noErr {
-                UserDefaults.standard.set(false, forKey: fallbackMutePrefix + device.uid)
+                volumeStore.setFallbackMuteActive(false, forDeviceUID: device.uid)
                 onChange?()
                 return
             }
@@ -127,7 +134,7 @@ final class CoreAudioDeviceManager {
             return
         }
 
-        if UserDefaults.standard.bool(forKey: fallbackMutePrefix + device.uid) {
+        if volumeStore.isFallbackMuteActive(forDeviceUID: device.uid) {
             try restoreInputLevel(for: device)
             return
         }
@@ -138,7 +145,7 @@ final class CoreAudioDeviceManager {
         }
 
         if readInputVolume(for: device) == 0 {
-            if savedVolume(for: device) != nil {
+            if volumeStore.savedInputLevel(forDeviceUID: device.uid) != nil {
                 try restoreInputLevel(for: device)
             } else {
                 throw AudioDeviceError.missingSavedInputLevel
@@ -162,26 +169,26 @@ final class CoreAudioDeviceManager {
             throw AudioDeviceError.unsupported
         }
 
-        saveInputLevel(currentValues, for: device)
-        UserDefaults.standard.set(true, forKey: fallbackMutePrefix + device.uid)
+        volumeStore.saveInputLevel(currentValues, forDeviceUID: device.uid)
+        volumeStore.setFallbackMuteActive(true, forDeviceUID: device.uid)
 
-        let zeroValues = currentValues.map { VolumeValue(element: $0.element, value: 0) }
+        let zeroValues = currentValues.map { VolumeSnapshot(element: $0.element, value: 0) }
         guard writeVolumeValues(zeroValues, for: device) else {
             _ = writeVolumeValues(currentValues, for: device)
-            clearSavedInputLevel(for: device)
+            volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
             throw AudioDeviceError.unsupported
         }
         onChange?()
     }
 
     private func restoreInputLevel(for device: AudioInputDevice) throws {
-        guard let savedVolume = savedVolume(for: device) else {
+        guard let savedVolume = volumeStore.savedInputLevel(forDeviceUID: device.uid) else {
             throw AudioDeviceError.missingSavedInputLevel
         }
-        guard writeVolumeValues(savedVolume.values, for: device) else {
+        guard writeVolumeValues(savedVolume, for: device) else {
             throw AudioDeviceError.unsupported
         }
-        clearSavedInputLevel(for: device)
+        volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
         onChange?()
     }
 }

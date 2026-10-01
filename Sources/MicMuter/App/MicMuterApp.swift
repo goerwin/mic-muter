@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 @main
@@ -18,11 +19,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hud = HUDOverlayController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let model = MicMuterModel()
+        let audio = CoreAudioDeviceManager(volumeStore: VolumeStore())
+        let model = MicMuterModel(
+            audio: audio,
+            selectionStore: DeviceSelectionStore(),
+            settings: SettingsStore(),
+            loginService: SMLoginItemService(),
+            shortcutService: KeyboardShortcutService(),
+            onToggleFeedback: { [hud] status, deviceName in
+                hud.present(status: status, deviceName: deviceName)
+            },
+            terminator: { NSApp.terminate(nil) }
+        )
         self.model = model
         statusBar = StatusBarController(model: model)
-        model.onToggleFeedback = { [hud] status, deviceName in
-            hud.present(status: status, deviceName: deviceName)
-        }
     }
 }

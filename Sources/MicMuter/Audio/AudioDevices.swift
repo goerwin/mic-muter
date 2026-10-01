@@ -1,4 +1,5 @@
 import CoreAudio
+import Foundation
 
 struct AudioInputDevice: Identifiable, Hashable {
     let uid: String
@@ -7,6 +8,12 @@ struct AudioInputDevice: Identifiable, Hashable {
     let inputChannelCount: Int
 
     var id: String { uid }
+}
+
+/// A device's input volume value identified by Core Audio element.
+struct VolumeSnapshot: Codable, Equatable {
+    let element: UInt32
+    let value: Float
 }
 
 enum AudioDeviceStatus: Equatable {

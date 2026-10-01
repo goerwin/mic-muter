@@ -3,18 +3,12 @@ import SwiftUI
 
 @MainActor
 final class HUDOverlayController {
-    static let panelSize = NSSize(width: 240, height: 200)
-
-    private static let fadeDuration: TimeInterval = 0.2
-    private static var fadeInterval: Duration { .milliseconds(Int(fadeDuration * 1000)) }
-    private static let holdDuration: Duration = .milliseconds(800)
-
     private let panel: NSPanel
     private var dismissalTask: Task<Void, Never>?
 
     init() {
         panel = NSPanel(
-            contentRect: NSRect(origin: .zero, size: HUDOverlayController.panelSize),
+            contentRect: NSRect(origin: .zero, size: HUDLayout.panelSize),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
             defer: false
@@ -36,21 +30,19 @@ final class HUDOverlayController {
         panel.contentView = makeContentView(status: status, deviceName: deviceName)
         centerOnFocusedScreen()
 
-        if panel.isVisible {
-            panel.alphaValue = 1
-        } else {
-            panel.alphaValue = 1
+        panel.alphaValue = 1
+        if !panel.isVisible {
             panel.orderFrontRegardless()
         }
 
         dismissalTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
-            try? await Task.sleep(for: HUDOverlayController.holdDuration)
+            try? await Task.sleep(for: HUDLayout.holdDuration)
             guard !Task.isCancelled else { return }
 
             self.setAlpha(0, animated: true)
-            try? await Task.sleep(for: HUDOverlayController.fadeInterval)
+            try? await Task.sleep(for: HUDLayout.fadeInterval)
             guard !Task.isCancelled else { return }
 
             self.dismiss()
@@ -66,7 +58,7 @@ final class HUDOverlayController {
     private func setAlpha(_ value: CGFloat, animated: Bool = true) {
         if animated {
             NSAnimationContext.runAnimationGroup { context in
-                context.duration = HUDOverlayController.fadeDuration
+                context.duration = HUDLayout.fadeDuration
                 panel.animator().alphaValue = value
             }
         } else {
@@ -76,7 +68,7 @@ final class HUDOverlayController {
 
     private func makeContentView(status: MicStatus, deviceName: String) -> NSView {
         let view = NSHostingView(rootView: HUDOverlayView(status: status, deviceName: deviceName))
-        view.frame = NSRect(origin: .zero, size: HUDOverlayController.panelSize)
+        view.frame = NSRect(origin: .zero, size: HUDLayout.panelSize)
         view.autoresizingMask = [.width, .height]
         return view
     }

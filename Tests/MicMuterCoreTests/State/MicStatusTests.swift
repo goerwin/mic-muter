@@ -1,6 +1,6 @@
 import XCTest
 
-@testable import MicMuterState
+@testable import MicMuterCore
 
 final class MicStatusTests: XCTestCase {
     func testMutedAndUnmutedStatesUseDistinctGlyphs() {
