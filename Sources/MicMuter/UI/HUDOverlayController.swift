@@ -35,21 +35,21 @@ final class HUDOverlayController {
 
         panel.contentView = makeContentView(status: status, deviceName: deviceName)
         centerOnFocusedScreen()
-        panel.alphaValue = 0
-        panel.orderFrontRegardless()
 
-        // Hold measured from end of fade-in.
+        if panel.isVisible {
+            panel.alphaValue = 1
+        } else {
+            panel.alphaValue = 1
+            panel.orderFrontRegardless()
+        }
+
         dismissalTask = Task { @MainActor [weak self] in
             guard let self else { return }
-
-            self.setAlpha(1)
-            try? await Task.sleep(for: HUDOverlayController.fadeInterval)
-            guard !Task.isCancelled else { return }
 
             try? await Task.sleep(for: HUDOverlayController.holdDuration)
             guard !Task.isCancelled else { return }
 
-            self.setAlpha(0)
+            self.setAlpha(0, animated: true)
             try? await Task.sleep(for: HUDOverlayController.fadeInterval)
             guard !Task.isCancelled else { return }
 
@@ -63,10 +63,14 @@ final class HUDOverlayController {
         dismissalTask = nil
     }
 
-    private func setAlpha(_ value: CGFloat) {
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = HUDOverlayController.fadeDuration
-            panel.animator().alphaValue = value
+    private func setAlpha(_ value: CGFloat, animated: Bool = true) {
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = HUDOverlayController.fadeDuration
+                panel.animator().alphaValue = value
+            }
+        } else {
+            panel.alphaValue = value
         }
     }
 

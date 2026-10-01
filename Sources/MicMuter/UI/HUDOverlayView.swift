@@ -4,12 +4,12 @@ struct HUDOverlayView: View {
     let status: MicStatus
     let deviceName: String
 
-    private static let iconSlot = CGSize(width: 64, height: 64)  // Prevents text shift
+    private static let iconSlot = CGSize(width: 64, height: 64)
 
     var body: some View {
         VStack(spacing: 12) {
             MicGlyphView(isSlashed: status.isSlashed)
-                .foregroundStyle(.white)
+                .foregroundStyle(status.isSlashed ? .white.opacity(0.55) : .white)
                 .frame(width: Self.iconSlot.width, height: Self.iconSlot.height)
 
             VStack(spacing: 4) {
