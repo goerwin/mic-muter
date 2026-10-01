@@ -7,8 +7,7 @@ on:
   workflow_call:
 
 concurrency:
-  # Deliberately not github.workflow: a called workflow sees the caller's name
-  # there, so a shared group plus cancel-in-progress cancels the release run.
+  # Shared group so release run cancels prior CI run.
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 

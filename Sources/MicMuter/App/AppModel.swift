@@ -1,5 +1,4 @@
 import AppKit
-import Foundation
 import KeyboardShortcuts
 import Observation
 import ServiceManagement
@@ -11,10 +10,13 @@ extension KeyboardShortcuts.Name {
 @MainActor
 @Observable
 final class MicMuterModel {
+    private enum DefaultsKey {
+        static let selectedUID = "selectedInputDeviceUID"
+        static let selectedName = "selectedInputDeviceName"
+        static let showHUD = "showHUDOnToggle"
+    }
+
     private let audio = CoreAudioDeviceManager()
-    private let selectedUIDKey = "selectedInputDeviceUID"
-    private let selectedNameKey = "selectedInputDeviceName"
-    private let showHUDOnToggleKey = "showHUDOnToggle"
 
     private(set) var devices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
@@ -29,12 +31,12 @@ final class MicMuterModel {
     var onToggleFeedback: ((MicStatus, String) -> Void)?
 
     init() {
-        selectedDeviceUID = UserDefaults.standard.string(forKey: selectedUIDKey)
-        selectedDeviceNameSnapshot = UserDefaults.standard.string(forKey: selectedNameKey)
-        showHUDOnToggle = UserDefaults.standard.bool(forKey: showHUDOnToggleKey)
+        selectedDeviceUID = UserDefaults.standard.string(forKey: DefaultsKey.selectedUID)
+        selectedDeviceNameSnapshot = UserDefaults.standard.string(forKey: DefaultsKey.selectedName)
+        showHUDOnToggle = UserDefaults.standard.bool(forKey: DefaultsKey.showHUD)
 
         audio.onChange = { [weak self] in
-            Task { @MainActor [weak self] in
+            Task { @MainActor in
                 self?.refreshFromAudio()
             }
         }
@@ -60,11 +62,8 @@ final class MicMuterModel {
     }
 
     var selectedDevice: AudioInputDevice? {
-        if let selectedDeviceUID {
-            return devices.first { $0.uid == selectedDeviceUID }
-        }
-        guard let defaultInputUID else { return nil }
-        return devices.first { $0.uid == defaultInputUID }
+        if let selectedDeviceUID { return device(for: selectedDeviceUID) }
+        return device(for: defaultInputUID)
     }
 
     var selectedInputName: String {
@@ -79,7 +78,7 @@ final class MicMuterModel {
     var currentDefaultDeviceName: String {
         selectedDeviceUID == nil
             ? (selectedDevice?.name ?? "No input device")
-            : (devices.first { $0.uid == defaultInputUID }?.name ?? "No input device")
+            : (device(for: defaultInputUID)?.name ?? "No input device")
     }
 
     var isInputLevelZeroWithoutSavedValue: Bool {
@@ -90,8 +89,8 @@ final class MicMuterModel {
     func selectDefaultInput() {
         selectedDeviceUID = nil
         selectedDeviceNameSnapshot = nil
-        UserDefaults.standard.removeObject(forKey: selectedUIDKey)
-        UserDefaults.standard.removeObject(forKey: selectedNameKey)
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.selectedUID)
+        UserDefaults.standard.removeObject(forKey: DefaultsKey.selectedName)
         errorMessage = nil
         refreshStatus()
     }
@@ -99,8 +98,8 @@ final class MicMuterModel {
     func select(_ device: AudioInputDevice) {
         selectedDeviceUID = device.uid
         selectedDeviceNameSnapshot = device.name
-        UserDefaults.standard.set(device.uid, forKey: selectedUIDKey)
-        UserDefaults.standard.set(device.name, forKey: selectedNameKey)
+        UserDefaults.standard.set(device.uid, forKey: DefaultsKey.selectedUID)
+        UserDefaults.standard.set(device.name, forKey: DefaultsKey.selectedName)
         errorMessage = nil
         refreshStatus()
     }
@@ -147,7 +146,7 @@ final class MicMuterModel {
 
     func setShowHUDOnToggle(_ isEnabled: Bool) {
         showHUDOnToggle = isEnabled
-        UserDefaults.standard.set(isEnabled, forKey: showHUDOnToggleKey)
+        UserDefaults.standard.set(isEnabled, forKey: DefaultsKey.showHUD)
     }
 
     func terminate() {
@@ -157,13 +156,16 @@ final class MicMuterModel {
     private func refreshFromAudio() {
         devices = audio.inputDevices
         defaultInputUID = audio.defaultInputUID
-        if let selectedDeviceUID,
-            let device = devices.first(where: { $0.uid == selectedDeviceUID })
-        {
+        if let selectedDeviceUID, let device = device(for: selectedDeviceUID) {
             selectedDeviceNameSnapshot = device.name
-            UserDefaults.standard.set(device.name, forKey: selectedNameKey)
+            UserDefaults.standard.set(device.name, forKey: DefaultsKey.selectedName)
         }
         refreshStatus()
+    }
+
+    private func device(for uid: String?) -> AudioInputDevice? {
+        guard let uid else { return nil }
+        return devices.first { $0.uid == uid }
     }
 
     private func refreshStatus() {

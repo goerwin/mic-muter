@@ -8,9 +8,7 @@ DIST_DIR := dist
 APP_NAME := Mic Muter
 APP_SOURCE := $(DERIVED_DATA)/Build/Products/Release/$(APP_NAME).app
 
-# Overridden by CI from the git tag. The default keeps `make install` and a
-# bare `make release` working without arguments. CFBundleShortVersionString and
-# CFBundleVersion are both set from it.
+# Set by CI from git tag. Default keeps `make install`/`release` working.
 VERSION ?= 1.0.0
 
 XCODEBUILD = SWIFTPM_MODULECACHE_OVERRIDE="$(CURDIR)/$(BUILD_DIR)/SwiftPMModuleCache" xcodebuild \
@@ -37,8 +35,7 @@ lint:
 install:
 	./install.zsh
 
-# Builds a universal Release .app at $(VERSION) and packages it into $(DIST_DIR).
-# VERSION is how a git tag reaches the bundle's Info.plist.
+# Build universal Release .app and package into $(DIST_DIR).
 release:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache" "$(BUILD_DIR)/ClangModuleCache"
 	$(XCODEBUILD) -configuration Release ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build

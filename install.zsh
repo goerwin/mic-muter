@@ -1,9 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-# Builds from source and installs to /Applications, replacing any existing copy.
-# Version comes from the project default; override with VERSION=x.y.z.
-# For a signed, notarized build, install the release DMG instead.
+# Build and install to /Applications. Override version with VERSION=x.y.z.
 
 project_root="${0:A:h}"
 install_directory="/Applications"

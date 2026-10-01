@@ -31,7 +31,8 @@ struct MenuPopoverView: View {
     private var muteControl: some View {
         VStack(spacing: 10) {
             Button(action: model.toggleMute) {
-                Image(systemName: model.status.menuBarSymbol)
+                MicGlyphView(isSlashed: model.status.isSlashed)
+                    .frame(width: 34, height: 34)
             }
             .buttonStyle(
                 CircularMuteButtonStyle(
@@ -202,18 +203,10 @@ private struct CircularMuteButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.system(size: 28, weight: .medium))
-            .symbolRenderingMode(.hierarchical)
             .foregroundStyle(symbol)
             .frame(width: 72, height: 72)
-            .background {
-                Circle()
-                    .fill(fill)
-            }
-            .overlay {
-                Circle()
-                    .strokeBorder(Color.primary.opacity(0.1), lineWidth: 1)
-            }
+            .background { Circle().fill(fill) }
+            .overlay { Circle().strokeBorder(Color.primary.opacity(0.1), lineWidth: 1) }
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
             .opacity(isEnabled ? 1 : 0.42)

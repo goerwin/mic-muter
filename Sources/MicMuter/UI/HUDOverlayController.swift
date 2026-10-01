@@ -5,26 +5,13 @@ private struct HUDOverlayView: View {
     let status: MicStatus
     let deviceName: String
 
-    // `mic.slash.fill` lays out one point taller than `mic.fill`, which shifts the
-    // vertically centered content by half a point between states. A fixed slot makes
-    // both variants occupy identical space, so the text cannot move when toggling.
-    private static let iconSlot = CGSize(width: 64, height: 76)
-
-    // Separately, `mic.slash.fill` rasterizes one point right of and one point below
-    // `mic.fill` at the same nominal size, which moves the icon itself. The slot cannot
-    // correct this because it is a property of the glyph, not the layout.
-    private var slashedVariantOffset: CGFloat {
-        status.usesSlashSymbol ? -1 : 0
-    }
+    private static let iconSlot = CGSize(width: 64, height: 64)  // Prevents text shift
 
     var body: some View {
         VStack(spacing: 12) {
-            Image(systemName: status.menuBarSymbol)
-                .font(.system(size: 56, weight: .medium))
-                .symbolRenderingMode(.hierarchical)
+            MicGlyphView(isSlashed: status.isSlashed)
                 .foregroundStyle(.white)
                 .frame(width: Self.iconSlot.width, height: Self.iconSlot.height)
-                .offset(x: slashedVariantOffset, y: slashedVariantOffset)
 
             VStack(spacing: 4) {
                 Text(status.title)
@@ -95,8 +82,7 @@ final class HUDOverlayController {
         panel.alphaValue = 0
         panel.orderFrontRegardless()
 
-        // `holdDuration` is measured from the end of the fade-in, not from the moment the
-        // animation starts, so the HUD is fully opaque for the whole hold.
+        // Hold measured from end of fade-in.
         dismissalTask = Task { @MainActor [weak self] in
             guard let self else { return }
 

@@ -1,5 +1,3 @@
-import SwiftUI
-
 enum MicStatus: Equatable {
     case muted
     case unmuted
@@ -25,37 +23,12 @@ enum MicStatus: Equatable {
         }
     }
 
-    var menuBarSymbol: String {
-        switch self {
-        case .muted, .inputSilent:
-            "mic.slash.fill"
-        case .unmuted, .unknown, .unsupported, .disconnected:
-            "mic.fill"
-        }
-    }
-
-    var usesSlashSymbol: Bool {
-        switch self {
-        case .muted, .inputSilent:
-            true
-        case .unmuted, .unknown, .unsupported, .disconnected:
-            false
-        }
+    var isSlashed: Bool {
+        self == .muted || self == .inputSilent
     }
 
     var tintsMenuBarIcon: Bool {
         self == .unmuted
-    }
-
-    var menuBarTint: Color {
-        switch self {
-        case .unmuted:
-            .accentColor
-        case .muted, .inputSilent:
-            .primary
-        case .unknown, .unsupported, .disconnected:
-            .secondary
-        }
     }
 
     var accessibilityDescription: String {

@@ -1,11 +1,7 @@
 #!/bin/zsh
 set -euo pipefail
 
-# Packages a built .app into a compressed read-only DMG.
-# The output name is stable so release assets keep the same URL across versions.
-# The volume name is the app name, matching what every other macOS DMG does;
-# it is set explicitly only because the staging directory is a temp dir whose
-# name diskutil would otherwise adopt.
+# Package .app into compressed DMG. Stable output name keeps release URLs consistent.
 
 app_source="${1:A}"
 app_name="${app_source:t}"
@@ -14,7 +10,7 @@ dist_dir="${DIST_DIR:-dist}"
 mkdir -p "$dist_dir"
 dmg_path="$dist_dir/$bundle_name.dmg"
 
-# Guards against packaging a bundle whose version did not substitute.
+# Fail if version did not substitute.
 version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app_source/Contents/Info.plist")
 if [[ "$version" == "\$(MARKETING_VERSION)" ]]; then
 	print -u2 "CFBundleShortVersionString did not substitute; the build was not given a version."

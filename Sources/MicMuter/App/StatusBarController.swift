@@ -30,16 +30,9 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
                 self?.updateButton()
             }
         }
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(refreshIcon),
-            name: NSColor.systemColorsDidChangeNotification,
-            object: nil
-        )
     }
 
     deinit {
-        NotificationCenter.default.removeObserver(self)
         if let clickOutsideMonitor {
             NSEvent.removeMonitor(clickOutsideMonitor)
         }
@@ -47,10 +40,6 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
     func popoverDidClose(_ notification: Notification) {
         stopClickOutsideMonitor()
-    }
-
-    @objc private func refreshIcon() {
-        updateButton()
     }
 
     @objc private func handleClick(_ sender: Any?) {
@@ -111,9 +100,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
 
     private func updateButton() {
         guard let button = statusItem.button else { return }
-        let image = MenuBarIcon.image(for: model.status)
-        button.image = image
-        button.image?.isTemplate = image.isTemplate
+        button.image = MenuBarIcon.image(for: model.status)
         button.toolTip = "Mic Muter: \(model.status.title). Click to toggle, right-click for options."
         button.setAccessibilityLabel("Mic Muter. \(model.status.accessibilityDescription)")
     }

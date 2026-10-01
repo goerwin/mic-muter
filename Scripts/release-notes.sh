@@ -1,14 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-# Prints release notes for the given tag, derived from the commits between it and
-# the previous version tag. GitHub's own generated notes list merged pull
-# requests, so they are empty for a repository whose commits land straight on
-# main. Conventional Commit subjects are grouped by type; anything else is listed
-# verbatim.
-#
-# Requires a full clone (actions/checkout: fetch-depth: 0); a shallow one cannot
-# see the previous tag.
+# Release notes from commits between previous tag and given tag.
+# Groups Conventional Commits by type; needs full clone (fetch-depth: 0).
 
 tag="${1:?usage: release-notes.sh vX.Y.Z}"
 
@@ -17,8 +11,7 @@ if ! git rev-parse --verify --quiet "$tag^{commit}" >/dev/null; then
   exit 1
 fi
 
-# Overridable so the workflow can supply an explicit URL; otherwise taken from
-# the origin remote, which covers local runs too.
+# Allow workflow to override repo URL; fallback to origin.
 repo_url="${REPO_URL:-$(git config --get remote.origin.url)}"
 repo_url="${repo_url%.git}"
 repo_url="${repo_url/git@github.com:/https://github.com/}"
@@ -31,8 +24,7 @@ trap 'rm -rf "$tmp"' EXIT
 
 emit() { printf -- '- %s ([%s](%s/commit/%s))\n' "$2" "$3" "$repo_url" "$3" >>"$tmp/$1"; }
 
-# `read` returns non-zero at EOF, so the || guard is what keeps the final commit.
-# The %x1f separator cannot appear in a commit subject.
+# Keep final commit at EOF; %x1f separator never appears in subjects.
 while IFS= read -r line || [ -n "$line" ]; do
   [[ -z "$line" ]] && continue
   subject="${line%%$'\x1f'*}"

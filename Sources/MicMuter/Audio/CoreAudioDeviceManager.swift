@@ -36,6 +36,8 @@ enum AudioDeviceError: LocalizedError {
 
 @MainActor
 final class CoreAudioDeviceManager {
+    // MARK: - Types
+
     private struct ListenerRegistration {
         let objectID: AudioObjectID
         let address: AudioObjectPropertyAddress
@@ -51,6 +53,8 @@ final class CoreAudioDeviceManager {
         let values: [VolumeValue]
     }
 
+    // MARK: - State
+
     private(set) var inputDevices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
     var onChange: (() -> Void)?
@@ -59,6 +63,8 @@ final class CoreAudioDeviceManager {
     private let savedVolumePrefix = "savedInputVolume."
     private let fallbackMutePrefix = "mutedByInputVolume."
     private var listeners: [String: ListenerRegistration] = [:]
+
+    // MARK: - Monitoring
 
     func startMonitoring() {
         addListener(
@@ -107,6 +113,8 @@ final class CoreAudioDeviceManager {
         }
         onChange?()
     }
+
+    // MARK: - Public API
 
     func canControl(_ device: AudioInputDevice) -> Bool {
         canSetMute(device.objectID) || hasWritableInputVolumes(for: device)
@@ -174,6 +182,8 @@ final class CoreAudioDeviceManager {
         throw AudioDeviceError.unsupported
     }
 
+    // MARK: - Mute via volume fallback
+
     private func muteByZeroingInput(for device: AudioInputDevice) throws {
         let addresses = volumeAddresses(for: device)
         let currentValues = readVolumeValues(for: device)
@@ -207,6 +217,8 @@ final class CoreAudioDeviceManager {
         clearSavedInputLevel(for: device)
         onChange?()
     }
+
+    // MARK: - Discovery
 
     private func enumerateInputDevices() -> [AudioInputDevice] {
         var address = propertyAddress(kAudioHardwarePropertyDevices)
@@ -279,6 +291,8 @@ final class CoreAudioDeviceManager {
         guard status == noErr, objectID != AudioDeviceID(kAudioObjectUnknown) else { return nil }
         return objectID
     }
+
+    // MARK: - CoreAudio helpers
 
     private func stringProperty(_ objectID: AudioObjectID, selector: AudioObjectPropertySelector) -> String? {
         var address = propertyAddress(selector)
@@ -407,6 +421,8 @@ final class CoreAudioDeviceManager {
         return didWriteAll
     }
 
+    // MARK: - Persistence
+
     private func saveInputLevel(_ values: [VolumeValue], for device: AudioInputDevice) {
         let saved = SavedVolume(values: values)
         guard let data = try? JSONEncoder().encode(saved) else { return }
@@ -422,6 +438,8 @@ final class CoreAudioDeviceManager {
         UserDefaults.standard.removeObject(forKey: savedVolumePrefix + device.uid)
         UserDefaults.standard.removeObject(forKey: fallbackMutePrefix + device.uid)
     }
+
+    // MARK: - Listeners
 
     private func removeDeviceListeners(for device: AudioInputDevice) {
         removeListener(key: "device.\(device.uid).mute")

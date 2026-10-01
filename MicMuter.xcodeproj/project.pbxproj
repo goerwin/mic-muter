@@ -16,6 +16,7 @@
 		A10000000000000000000009 /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000A /* MenuBarIcon.swift */; };
 		A1000000000000000000000A /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000B /* StatusBarController.swift */; };
 		A1000000000000000000000B /* HUDOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000C /* HUDOverlayController.swift */; };
+		A1000000000000000000000D /* MicGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000E /* MicGlyph.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -30,6 +31,7 @@
 		C1000000000000000000000A /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
 		C1000000000000000000000B /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		C1000000000000000000000C /* HUDOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDOverlayController.swift; sourceTree = "<group>"; };
+		C1000000000000000000000E /* MicGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicGlyph.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -81,6 +83,7 @@
 				C10000000000000000000004 /* MenuPopoverView.swift */,
 				C1000000000000000000000A /* MenuBarIcon.swift */,
 				C1000000000000000000000C /* HUDOverlayController.swift */,
+				C1000000000000000000000E /* MicGlyph.swift */,
 			);
 			path = Sources/MicMuter/UI;
 			sourceTree = "<group>";
@@ -178,6 +181,7 @@
 				A10000000000000000000009 /* MenuBarIcon.swift in Sources */,
 				A1000000000000000000000A /* StatusBarController.swift in Sources */,
 				A1000000000000000000000B /* HUDOverlayController.swift in Sources */,
+				A1000000000000000000000D /* MicGlyph.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

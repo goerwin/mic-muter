@@ -29,8 +29,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7
-        # fetch-depth: 0 so release-notes.sh can see the previous tag. `ref` is
-        # pinned because a dispatch has no tag ref and would build main instead.
+        # fetch-depth 0 for release notes; pin ref for dispatch builds.
         with:
           ref: ${{ env.TAG }}
           fetch-depth: 0
