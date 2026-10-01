@@ -23,7 +23,6 @@ final class StoresTests: XCTestCase {
         store.saveNameSnapshot("Mic One Renamed", for: "uid-1")
         XCTAssertEqual(store.selectedDeviceNameSnapshot, "Mic One Renamed")
 
-        // Snapshot for a non-selected uid is ignored.
         store.saveNameSnapshot("Other", for: "uid-2")
         XCTAssertEqual(store.selectedDeviceNameSnapshot, "Mic One Renamed")
 

@@ -15,7 +15,6 @@ final class StatusBarController: NSObject {
         let hosting = NSHostingController(rootView: MenuPopoverView(model: model))
         hosting.sizingOptions = .preferredContentSize
         popover.contentViewController = hosting
-        // .transient already dismisses on outside click; no custom monitor needed.
         popover.behavior = .transient
 
         statusItem.button?.target = self

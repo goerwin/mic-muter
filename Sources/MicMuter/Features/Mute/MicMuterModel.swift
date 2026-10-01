@@ -1,9 +1,6 @@
 import Foundation
 import Observation
 
-/// Source of truth for device selection, mute status and user settings.
-/// All side effects (persistence, login item, shortcuts, termination) go
-/// through injected collaborators so the model is unit-testable.
 @MainActor
 @Observable
 final class MicMuterModel {

@@ -9,7 +9,6 @@ let package = Package(
         .library(name: "MicMuterCore", targets: ["MicMuterCore"])
     ],
     targets: [
-        // Keep the non-UI implementation buildable by SwiftPM for unit tests.
         .target(
             name: "MicMuterCore",
             path: "Sources/MicMuter",

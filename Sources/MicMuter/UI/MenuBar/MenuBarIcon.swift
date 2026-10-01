@@ -24,7 +24,6 @@ enum MenuBarIcon {
 
         let rendered = render(status: status)
 
-        // Bound the cache: 6 statuses x handful of appearances/accents.
         if cache.count >= 48 { cache.removeAll(keepingCapacity: true) }
         cache[key] = rendered
         return rendered

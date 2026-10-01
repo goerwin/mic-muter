@@ -10,7 +10,6 @@ struct AudioInputDevice: Identifiable, Hashable {
     var id: String { uid }
 }
 
-/// A device's input volume value identified by Core Audio element.
 struct VolumeSnapshot: Codable, Equatable {
     let element: UInt32
     let value: Float

@@ -3,21 +3,16 @@ import Foundation
 
 @MainActor
 final class CoreAudioDeviceManager {
-    // MARK: - Types
-
     struct ListenerRegistration {
         let objectID: AudioObjectID
         let address: AudioObjectPropertyAddress
         let block: AudioObjectPropertyListenerBlock
     }
 
-    // MARK: - State
-
     private(set) var inputDevices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
     var onChange: (() -> Void)?
 
-    // Shared with CoreAudioDeviceManager's focused extensions in sibling files.
     let systemObject = AudioObjectID(kAudioObjectSystemObject)
     var listeners: [String: ListenerRegistration] = [:]
     private let volumeStore: any VolumeStoring
@@ -27,8 +22,6 @@ final class CoreAudioDeviceManager {
         self.volumeStore = volumeStore
         self.propertyAccess = propertyAccess
     }
-
-    // MARK: - Monitoring
 
     func startMonitoring() {
         addListener(
@@ -79,9 +72,7 @@ final class CoreAudioDeviceManager {
         onChange?()
     }
 
-    /// Clears fallback-mute flags the user resolved externally (e.g. raised
-    /// the input level in System Settings). Kept out of `status(for:)` so
-    /// queries stay side-effect free.
+    // Clear externally resolved fallback mutes here so status queries stay read-only.
     private func reconcileStaleFallbackState() {
         for device in inputDevices {
             reconcileStaleFallbackState(for: device)
@@ -101,8 +92,6 @@ final class CoreAudioDeviceManager {
             volumeStore.clearSavedInputLevel(forDeviceUID: device.uid)
         }
     }
-
-    // MARK: - Public API
 
     func canControl(_ device: AudioInputDevice) -> Bool {
         propertyAccess.canSetMute(for: device) || hasWritableInputVolumes(for: device)
@@ -173,8 +162,6 @@ final class CoreAudioDeviceManager {
 
         throw AudioDeviceError.unsupported
     }
-
-    // MARK: - Mute via volume fallback
 
     private func hasWritableInputVolumes(for device: AudioInputDevice) -> Bool {
         let controls = propertyAccess.volumeProperties(for: device)

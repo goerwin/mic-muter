@@ -14,8 +14,6 @@ enum MicGlyph {
         NSImage(named: assetName(isSlashed: isSlashed))
     }
 
-    /// Draws the glyph into a CoreGraphics context. Used only as a fallback
-    /// when the vector assets are missing (see `MenuBarIcon`).
     static func draw(in cgContext: CGContext, canvasSize: CGSize, color: CGColor, isSlashed: Bool) {
         guard let base = nsImage(isSlashed: isSlashed) else { return }
         let rect = fittedRect(canvasSize: canvasSize)

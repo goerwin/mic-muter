@@ -10,7 +10,6 @@ protocol AudioDevicePropertyAccess: AnyObject {
     func writeVolumeValues(_ values: [VolumeSnapshot], for device: AudioInputDevice) -> Bool
 }
 
-/// Core Audio implementation for mute and input-volume properties.
 @MainActor
 final class CoreAudioDevicePropertyAccess: AudioDevicePropertyAccess {
     func muteValue(for device: AudioInputDevice) -> Bool? {

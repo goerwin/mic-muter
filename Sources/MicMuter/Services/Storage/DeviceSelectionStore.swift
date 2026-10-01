@@ -1,6 +1,5 @@
 import Foundation
 
-/// Persists which input device the user selected.
 /// `nil` uid means "follow System Default".
 @MainActor
 protocol DeviceSelectionStoring: AnyObject {

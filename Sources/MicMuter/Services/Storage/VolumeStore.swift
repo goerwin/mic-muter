@@ -1,7 +1,5 @@
 import Foundation
 
-/// Persists fallback-mute state (input level zeroed because the device
-/// has no writable mute control) and the saved pre-mute levels.
 @MainActor
 protocol VolumeStoring: AnyObject {
     func saveInputLevel(_ values: [VolumeSnapshot], forDeviceUID uid: String)

@@ -138,7 +138,6 @@ final class CoreAudioDeviceManagerTests: XCTestCase {
         manager.reconcileStaleFallbackState(for: device)
         XCTAssertEqual(store.savedInputLevel(forDeviceUID: device.uid), originalLevels)
 
-        // Retry unmute after the failed channel write.
         try manager.setMuted(false, for: device)
         XCTAssertEqual(properties.volumeValues(for: device), originalLevels)
         XCTAssertNil(store.savedInputLevel(forDeviceUID: device.uid))
