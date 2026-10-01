@@ -38,34 +38,26 @@ enum MenuBarIcon {
         guard let base else { return NSImage(size: canvasSize) }
 
         if status.tintsMenuBarIcon {
-            return tintedImage(from: base, color: .controlAccentColor)
+            return fittedImage(from: base, isTemplate: false, tint: .controlAccentColor)
         }
         return fittedImage(from: base, isTemplate: true, opacity: 0.55)
     }
 
-    private static func fittedImage(from base: NSImage, isTemplate: Bool, opacity: CGFloat = 1) -> NSImage {
+    private static func fittedImage(
+        from base: NSImage, isTemplate: Bool, opacity: CGFloat = 1, tint: NSColor? = nil
+    ) -> NSImage {
         let drawRect = fittedRect(for: base)
 
         let image = NSImage(size: canvasSize)
         image.lockFocus()
         base.draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: opacity)
+        if let tint {
+            tint.set()
+            drawRect.fill(using: .sourceAtop)
+        }
         image.unlockFocus()
         image.size = canvasSize
         image.isTemplate = isTemplate
-        return image
-    }
-
-    private static func tintedImage(from base: NSImage, color: NSColor) -> NSImage {
-        let drawRect = fittedRect(for: base)
-
-        let image = NSImage(size: canvasSize)
-        image.lockFocus()
-        base.draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: 1)
-        color.set()
-        drawRect.fill(using: .sourceAtop)
-        image.unlockFocus()
-        image.size = canvasSize
-        image.isTemplate = false
         return image
     }
 

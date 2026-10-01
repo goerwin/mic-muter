@@ -96,4 +96,15 @@ final class CoreAudioDeviceMonitor: AudioDeviceMonitoring {
         guard objectID != AudioDeviceID(kAudioObjectUnknown) else { return nil }
         return objectID
     }
+
+    private func stringProperty(_ objectID: AudioObjectID, selector: AudioObjectPropertySelector) throws -> String? {
+        var address = audioPropertyAddress(selector)
+        guard AudioObjectHasProperty(objectID, &address) else { return nil }
+        var value: Unmanaged<CFString>?
+        var dataSize = UInt32(MemoryLayout<Unmanaged<CFString>?>.size)
+        let status = AudioObjectGetPropertyData(objectID, &address, 0, nil, &dataSize, &value)
+        guard status == noErr else { throw AudioDeviceMonitoringError.deviceEnumeration(status) }
+        guard let value else { return nil }
+        return value.takeRetainedValue() as String
+    }
 }
