@@ -1,7 +1,7 @@
 # Mic Muter
 
 <p align="center">
-  <img src="Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-256.png" width="128" alt="Mic Muter icon" style="border: 1px solid #d0d7de; border-radius: 50%;">
+  <img src="Resources/readme-icon.png" width="128" alt="Mic Muter icon">
 </p>
 
 A menu-bar-only macOS app that mutes and unmutes the microphone you select. Click the menu bar icon, or assign a global shortcut.
@@ -53,7 +53,3 @@ Run `make release-patch`, `make release-minor`, or `make release-major`. These t
 Or trigger it from the Actions tab via *Release* > *Run workflow* with the tag you want.
 
 Each release has two assets: `Mic Muter.dmg` (Apple silicon and Intel) and `SHA256SUMS`, which verifies with `shasum -c SHA256SUMS`.
-
-### Release notes
-
-Generated automatically from the commits between the new tag and the previous one, so there is nothing to write. `feat:` and `fix:` subjects are grouped under those headings; anything else is listed verbatim. Each line links to its commit. Keep commit subjects descriptive, since they become the release body.
