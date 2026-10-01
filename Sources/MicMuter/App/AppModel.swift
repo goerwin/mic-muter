@@ -16,7 +16,7 @@ final class MicMuterModel {
         static let showHUD = "showHUDOnToggle"
     }
 
-    private let audio = CoreAudioDeviceManager()
+    private let audio: any AudioDeviceManaging
 
     private(set) var devices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
@@ -30,17 +30,18 @@ final class MicMuterModel {
 
     var onToggleFeedback: ((MicStatus, String) -> Void)?
 
-    init() {
+    init(audio: (any AudioDeviceManaging)? = nil) {
+        self.audio = audio ?? CoreAudioDeviceManager()
         selectedDeviceUID = UserDefaults.standard.string(forKey: DefaultsKey.selectedUID)
         selectedDeviceNameSnapshot = UserDefaults.standard.string(forKey: DefaultsKey.selectedName)
         showHUDOnToggle = UserDefaults.standard.bool(forKey: DefaultsKey.showHUD)
 
-        audio.onChange = { [weak self] in
+        self.audio.onChange = { [weak self] in
             Task { @MainActor in
                 self?.refreshFromAudio()
             }
         }
-        audio.startMonitoring()
+        self.audio.startMonitoring()
         refreshFromAudio()
         refreshLoginAtLaunchState()
 
@@ -112,14 +113,11 @@ final class MicMuterModel {
         }
 
         do {
-            let shouldMute = status != .muted
-            try audio.setMuted(shouldMute, for: selectedDevice)
+            try audio.setMuted(status != .muted, for: selectedDevice)
             errorMessage = nil
             refreshFromAudio()
-            let newStatus: MicStatus = shouldMute ? .muted : .unmuted
-            status = newStatus
             if showHUDOnToggle {
-                onToggleFeedback?(newStatus, selectedInputName)
+                onToggleFeedback?(status, selectedInputName)
             }
         } catch {
             errorMessage = error.localizedDescription

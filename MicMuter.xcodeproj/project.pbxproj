@@ -17,6 +17,13 @@
 		A1000000000000000000000A /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000B /* StatusBarController.swift */; };
 		A1000000000000000000000B /* HUDOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000C /* HUDOverlayController.swift */; };
 		A1000000000000000000000D /* MicGlyph.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000E /* MicGlyph.swift */; };
+		A10000000000000000000014 /* HUDOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000015 /* HUDOverlayView.swift */; };
+		A1000000000000000000000E /* AudioDevices.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000F /* AudioDevices.swift */; };
+		A1000000000000000000000F /* CoreAudioDeviceManager+Discovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000010 /* CoreAudioDeviceManager+Discovery.swift */; };
+		A10000000000000000000010 /* CoreAudioDeviceManager+Listeners.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000011 /* CoreAudioDeviceManager+Listeners.swift */; };
+		A10000000000000000000011 /* CoreAudioDeviceManager+Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */; };
+		A10000000000000000000012 /* CoreAudioDeviceManager+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */; };
+		A10000000000000000000013 /* AudioDeviceManaging.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000014 /* AudioDeviceManaging.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +39,13 @@
 		C1000000000000000000000B /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
 		C1000000000000000000000C /* HUDOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDOverlayController.swift; sourceTree = "<group>"; };
 		C1000000000000000000000E /* MicGlyph.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MicGlyph.swift; sourceTree = "<group>"; };
+		C10000000000000000000015 /* HUDOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDOverlayView.swift; sourceTree = "<group>"; };
+		C1000000000000000000000F /* AudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevices.swift; sourceTree = "<group>"; };
+		C10000000000000000000010 /* CoreAudioDeviceManager+Discovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Discovery.swift"; sourceTree = "<group>"; };
+		C10000000000000000000011 /* CoreAudioDeviceManager+Listeners.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Listeners.swift"; sourceTree = "<group>"; };
+		C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Persistence.swift"; sourceTree = "<group>"; };
+		C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Properties.swift"; sourceTree = "<group>"; };
+		C10000000000000000000014 /* AudioDeviceManaging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManaging.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,7 +86,13 @@
 		E10000000000000000000003 /* Audio */ = {
 			isa = PBXGroup;
 			children = (
+				C1000000000000000000000F /* AudioDevices.swift */,
 				C10000000000000000000003 /* CoreAudioDeviceManager.swift */,
+				C10000000000000000000010 /* CoreAudioDeviceManager+Discovery.swift */,
+				C10000000000000000000011 /* CoreAudioDeviceManager+Listeners.swift */,
+				C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */,
+				C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */,
+				C10000000000000000000014 /* AudioDeviceManaging.swift */,
 			);
 			path = Sources/MicMuter/Audio;
 			sourceTree = "<group>";
@@ -83,6 +103,7 @@
 				C10000000000000000000004 /* MenuPopoverView.swift */,
 				C1000000000000000000000A /* MenuBarIcon.swift */,
 				C1000000000000000000000C /* HUDOverlayController.swift */,
+				C10000000000000000000015 /* HUDOverlayView.swift */,
 				C1000000000000000000000E /* MicGlyph.swift */,
 			);
 			path = Sources/MicMuter/UI;
@@ -176,11 +197,18 @@
 				A10000000000000000000001 /* MicMuterApp.swift in Sources */,
 				A10000000000000000000002 /* AppModel.swift in Sources */,
 				A10000000000000000000003 /* CoreAudioDeviceManager.swift in Sources */,
+				A1000000000000000000000E /* AudioDevices.swift in Sources */,
+				A1000000000000000000000F /* CoreAudioDeviceManager+Discovery.swift in Sources */,
+				A10000000000000000000010 /* CoreAudioDeviceManager+Listeners.swift in Sources */,
+				A10000000000000000000011 /* CoreAudioDeviceManager+Persistence.swift in Sources */,
+				A10000000000000000000012 /* CoreAudioDeviceManager+Properties.swift in Sources */,
+				A10000000000000000000013 /* AudioDeviceManaging.swift in Sources */,
 				A10000000000000000000004 /* MenuPopoverView.swift in Sources */,
 				A10000000000000000000007 /* MicStatus.swift in Sources */,
 				A10000000000000000000009 /* MenuBarIcon.swift in Sources */,
 				A1000000000000000000000A /* StatusBarController.swift in Sources */,
 				A1000000000000000000000B /* HUDOverlayController.swift in Sources */,
+				A10000000000000000000014 /* HUDOverlayView.swift in Sources */,
 				A1000000000000000000000D /* MicGlyph.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

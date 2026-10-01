@@ -2,8 +2,20 @@ import AppKit
 
 enum MenuBarIcon {
     private static let canvasSize = NSSize(width: 18, height: 16)
+    private static var cache: [MicStatus: NSImage] = [:]
+    private static var cachedAppearance: String?
+    private static var cachedAccent: String?
 
     static func image(for status: MicStatus) -> NSImage {
+        let appearance = NSApp.effectiveAppearance.name.rawValue
+        let accent = NSColor.controlAccentColor.description
+        if cachedAppearance != appearance || cachedAccent != accent {
+            cache.removeAll()
+            cachedAppearance = appearance
+            cachedAccent = accent
+        }
+        if let cached = cache[status] { return cached }
+
         let pixelsWide = Int(canvasSize.width * 2)
         let pixelsHigh = Int(canvasSize.height * 2)
         guard
@@ -40,6 +52,13 @@ enum MenuBarIcon {
         let image = NSImage(size: canvasSize)
         image.addRepresentation(rep)
         image.isTemplate = !status.tintsMenuBarIcon
+        cache[status] = image
         return image
+    }
+
+    static func invalidateCache() {
+        cache.removeAll()
+        cachedAppearance = nil
+        cachedAccent = nil
     }
 }
