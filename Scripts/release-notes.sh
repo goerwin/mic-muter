@@ -17,29 +17,37 @@ if ! git rev-parse --verify --quiet "$tag^{commit}" >/dev/null; then
   exit 1
 fi
 
+# Overridable so the workflow can supply an explicit URL; otherwise taken from
+# the origin remote, which covers local runs too.
+repo_url="${REPO_URL:-$(git config --get remote.origin.url)}"
+repo_url="${repo_url%.git}"
+repo_url="${repo_url/git@github.com:/https://github.com/}"
+
 previous=$(git describe --tags --abbrev=0 "${tag}^" 2>/dev/null || true)
 range="${previous:+$previous..}$tag"
 
 tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
-# `read` returns non-zero at EOF, so the || guard is what keeps the final commit.
-while IFS= read -r subject || [ -n "$subject" ]; do
-  [[ -z "$subject" ]] && continue
-  if [[ "$subject" =~ ^feat(\(.+\))?!?:[[:space:]]+(.+)$ ]]; then
-    printf -- '- %s\n' "${BASH_REMATCH[2]}" >>"$tmp/features"
-  elif [[ "$subject" =~ ^fix(\(.+\))?!?:[[:space:]]+(.+)$ ]]; then
-    printf -- '- %s\n' "${BASH_REMATCH[2]}" >>"$tmp/fixes"
-  else
-    printf -- '- %s\n' "$subject" >>"$tmp/other"
-  fi
-done < <(git log --no-merges --pretty=format:'%s' "$range")
+emit() { printf -- '- %s ([%s](%s/commit/%s))\n' "$2" "$3" "$repo_url" "$3" >>"$tmp/$1"; }
 
-if [[ -n "$previous" ]]; then
-  notes="_Changes since ${previous}._"$'\n\n'
-else
-  notes="_All commits in this release._"$'\n\n'
-fi
+# `read` returns non-zero at EOF, so the || guard is what keeps the final commit.
+# The %x1f separator cannot appear in a commit subject.
+while IFS= read -r line || [ -n "$line" ]; do
+  [[ -z "$line" ]] && continue
+  subject="${line%%$'\x1f'*}"
+  hash="${line##*$'\x1f'}"
+  subject="${subject//$'\x1f'/ }"
+  if [[ "$subject" =~ ^feat(\(.+\))?!?:[[:space:]]+(.+)$ ]]; then
+    emit features "${BASH_REMATCH[2]}" "$hash"
+  elif [[ "$subject" =~ ^fix(\(.+\))?!?:[[:space:]]+(.+)$ ]]; then
+    emit fixes "${BASH_REMATCH[2]}" "$hash"
+  else
+    emit other "$subject" "$hash"
+  fi
+done < <(git log --no-merges --pretty=format:'%s%x1f%h' "$range")
+
+notes=""
 
 for section in "Features:features" "Fixes:fixes" "Other changes:other"; do
   [[ -s "$tmp/${section#*:}" ]] || continue

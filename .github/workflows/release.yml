@@ -57,11 +57,12 @@ jobs:
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
         run: |
           notes=$(Scripts/release-notes.sh "$TAG")
           gh release create "$TAG" \
             "dist/Mic Muter.dmg" \
             dist/SHA256SUMS \
-            --title "Mic Muter $VERSION" \
+            --title "$TAG" \
             --notes "$notes" \
             --verify-tag

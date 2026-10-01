@@ -31,7 +31,7 @@ Each release has two assets: `Mic Muter.dmg` (Apple silicon and Intel) and `SHA2
 
 ### Release notes
 
-Generated automatically from the commits between the new tag and the previous one, so there is nothing to write. `feat:` and `fix:` subjects are grouped under those headings; anything else is listed verbatim. Keep commit subjects descriptive, since they become the release body.
+Generated automatically from the commits between the new tag and the previous one, so there is nothing to write. `feat:` and `fix:` subjects are grouped under those headings; anything else is listed verbatim. Each line links to its commit. Keep commit subjects descriptive, since they become the release body.
 
 ## Installing
 
