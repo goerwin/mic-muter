@@ -1,9 +1,14 @@
 import CoreAudio
 
+enum AudioDeviceMonitoringError: Error {
+    case deviceEnumeration(OSStatus)
+    case defaultInput(OSStatus)
+}
+
 @MainActor
 protocol AudioDeviceMonitoring: AnyObject {
-    func enumerateInputDevices() -> [AudioInputDevice]
-    func defaultInputDeviceID() -> AudioDeviceID?
+    func enumerateInputDevices() throws -> [AudioInputDevice]
+    func defaultInputDeviceID() throws -> AudioDeviceID?
     func addListener(
         objectID: AudioObjectID, address: AudioObjectPropertyAddress, block: @escaping AudioObjectPropertyListenerBlock
     ) -> OSStatus
@@ -16,11 +21,12 @@ protocol AudioDeviceMonitoring: AnyObject {
 final class CoreAudioDeviceMonitor: AudioDeviceMonitoring {
     private let systemObject = AudioObjectID(kAudioObjectSystemObject)
 
-    func enumerateInputDevices() -> [AudioInputDevice] {
+    func enumerateInputDevices() throws -> [AudioInputDevice] {
         var address = audioPropertyAddress(kAudioHardwarePropertyDevices)
         var dataSize: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(systemObject, &address, 0, nil, &dataSize) == noErr else {
-            return []
+        let sizeStatus = AudioObjectGetPropertyDataSize(systemObject, &address, 0, nil, &dataSize)
+        guard sizeStatus == noErr else {
+            throw AudioDeviceMonitoringError.deviceEnumeration(sizeStatus)
         }
 
         let count = Int(dataSize) / MemoryLayout<AudioDeviceID>.stride
@@ -39,32 +45,33 @@ final class CoreAudioDeviceMonitor: AudioDeviceMonitoring {
                 baseAddress
             )
         }
-        guard status == noErr else { return [] }
+        guard status == noErr else { throw AudioDeviceMonitoringError.deviceEnumeration(status) }
 
-        return objectIDs.compactMap { objectID in
-            let channelCount = inputChannelCount(for: objectID)
+        return try objectIDs.compactMap { objectID in
+            let channelCount = try inputChannelCount(for: objectID)
             guard channelCount > 0,
-                let uid = stringProperty(objectID, selector: kAudioDevicePropertyDeviceUID)
+                let uid = try stringProperty(objectID, selector: kAudioDevicePropertyDeviceUID)
             else {
                 return nil
             }
-            let name = stringProperty(objectID, selector: kAudioObjectPropertyName) ?? "Input device"
+            let name = try stringProperty(objectID, selector: kAudioObjectPropertyName) ?? "Input device"
             return AudioInputDevice(uid: uid, name: name, objectID: objectID, inputChannelCount: channelCount)
         }
         .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    func inputChannelCount(for objectID: AudioObjectID) -> Int {
+    private func inputChannelCount(for objectID: AudioObjectID) throws -> Int {
         var address = audioPropertyAddress(
             kAudioDevicePropertyStreamConfiguration,
             scope: kAudioDevicePropertyScopeInput
         )
+        guard AudioObjectHasProperty(objectID, &address) else { return 0 }
         var dataSize: UInt32 = 0
-        guard AudioObjectGetPropertyDataSize(objectID, &address, 0, nil, &dataSize) == noErr,
-            dataSize > 0
-        else {
-            return 0
+        let sizeStatus = AudioObjectGetPropertyDataSize(objectID, &address, 0, nil, &dataSize)
+        guard sizeStatus == noErr else {
+            throw AudioDeviceMonitoringError.deviceEnumeration(sizeStatus)
         }
+        guard dataSize > 0 else { return 0 }
 
         let rawList = UnsafeMutableRawPointer.allocate(
             byteCount: Int(dataSize),
@@ -72,19 +79,21 @@ final class CoreAudioDeviceMonitor: AudioDeviceMonitoring {
         )
         defer { rawList.deallocate() }
         let bufferList = rawList.bindMemory(to: AudioBufferList.self, capacity: 1)
-        guard AudioObjectGetPropertyData(objectID, &address, 0, nil, &dataSize, bufferList) == noErr else {
-            return 0
+        let status = AudioObjectGetPropertyData(objectID, &address, 0, nil, &dataSize, bufferList)
+        guard status == noErr else {
+            throw AudioDeviceMonitoringError.deviceEnumeration(status)
         }
         return UnsafeMutableAudioBufferListPointer(bufferList)
             .reduce(0) { $0 + Int($1.mNumberChannels) }
     }
 
-    func defaultInputDeviceID() -> AudioDeviceID? {
+    func defaultInputDeviceID() throws -> AudioDeviceID? {
         var address = audioPropertyAddress(kAudioHardwarePropertyDefaultInputDevice)
         var objectID = AudioDeviceID(kAudioObjectUnknown)
         var dataSize = UInt32(MemoryLayout<AudioDeviceID>.size)
         let status = AudioObjectGetPropertyData(systemObject, &address, 0, nil, &dataSize, &objectID)
-        guard status == noErr, objectID != AudioDeviceID(kAudioObjectUnknown) else { return nil }
+        guard status == noErr else { throw AudioDeviceMonitoringError.defaultInput(status) }
+        guard objectID != AudioDeviceID(kAudioObjectUnknown) else { return nil }
         return objectID
     }
 }

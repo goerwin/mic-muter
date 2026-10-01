@@ -43,7 +43,6 @@ final class MicMuterModel {
 
         self.audio.onChange = { [weak self] in self?.refreshFromAudio() }
         self.audio.startMonitoring()
-        refreshFromAudio()
         refreshLoginItemState()
 
         shortcutService.onToggle { [weak self] in

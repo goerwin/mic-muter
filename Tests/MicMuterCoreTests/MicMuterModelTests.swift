@@ -242,6 +242,72 @@ final class MicMuterModelTests: XCTestCase {
         return (defaults, device, properties, monitor)
     }
 
+    private func makeMonitoringModel(startMonitoringFirst: Bool = false) -> (
+        MicMuterModel, CoreAudioDeviceManager, MockAudioDeviceMonitor
+    ) {
+        let domain = "test.\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: domain)!
+        addTeardownBlock { defaults.removePersistentDomain(forName: domain) }
+        let device = makeDevice()
+        let properties = MockAudioDevicePropertyAccess()
+        properties.writableMuteUIDs.insert(device.uid)
+        properties.muteValues[device.uid] = false
+        let monitor = MockAudioDeviceMonitor()
+        monitor.devices = [device]
+        monitor.defaultDeviceID = device.objectID
+        let manager = CoreAudioDeviceManager(
+            volumeStore: VolumeStore(defaults: defaults), propertyAccess: properties, monitor: monitor
+        )
+        if startMonitoringFirst { manager.startMonitoring() }
+        let (model, _, _, _, _) = makeModel(audio: manager)
+        return (model, manager, monitor)
+    }
+
+    func testInitialSnapshotIsDeliveredWhenMonitoringAlreadyStarted() {
+        let (model, _, monitor) = makeMonitoringModel(startMonitoringFirst: true)
+        defer { model.stop() }
+
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(monitor.enumerationCount, 1)
+    }
+
+    func testTransientDeviceEnumerationFailureDoesNotDisconnectMicrophone() async {
+        let (model, manager, monitor) = makeMonitoringModel()
+        defer { model.stop() }
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(monitor.enumerationCount, 1)
+
+        monitor.enumerationFailuresRemaining = 1
+        manager.refresh()
+
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(model.selectedInputName, "Mic One")
+        XCTAssertEqual(monitor.registrations.count, 4)
+        let retry = manager.retryTask
+        XCTAssertNotNil(retry)
+        await retry?.value
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(manager.inputDevices.map(\.uid), ["uid-1"])
+        XCTAssertNil(manager.retryTask)
+    }
+
+    func testTransientDefaultInputReadFailureDoesNotDisconnectMicrophone() async {
+        let (model, manager, monitor) = makeMonitoringModel()
+        defer { model.stop() }
+        XCTAssertEqual(model.status, .unmuted)
+
+        monitor.defaultInputFailuresRemaining = 1
+        manager.refresh()
+
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertEqual(model.selectedInputName, "Mic One")
+        let retry = manager.retryTask
+        XCTAssertNotNil(retry)
+        await retry?.value
+        XCTAssertEqual(model.status, .unmuted)
+        XCTAssertNil(manager.retryTask)
+    }
+
     func testRetryFailedUnmuteThroughModelRestoresOriginalLevels() {
         let (defaults, device, properties, monitor) = makeFallbackFixture()
         let manager = CoreAudioDeviceManager(

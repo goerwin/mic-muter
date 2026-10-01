@@ -120,14 +120,26 @@ final class MockAudioDeviceMonitor: AudioDeviceMonitoring {
     var registrations: [Registration] = []
     var removed: [Registration] = []
     var registrationFailuresRemaining = 0
+    var enumerationFailuresRemaining = 0
+    var defaultInputFailuresRemaining = 0
     var enumerationCount = 0
 
-    func enumerateInputDevices() -> [AudioInputDevice] {
+    func enumerateInputDevices() throws -> [AudioInputDevice] {
         enumerationCount += 1
+        if enumerationFailuresRemaining > 0 {
+            enumerationFailuresRemaining -= 1
+            throw AudioDeviceMonitoringError.deviceEnumeration(kAudioHardwareUnspecifiedError)
+        }
         return devices
     }
 
-    func defaultInputDeviceID() -> AudioDeviceID? { defaultDeviceID }
+    func defaultInputDeviceID() throws -> AudioDeviceID? {
+        if defaultInputFailuresRemaining > 0 {
+            defaultInputFailuresRemaining -= 1
+            throw AudioDeviceMonitoringError.defaultInput(kAudioHardwareUnspecifiedError)
+        }
+        return defaultDeviceID
+    }
 
     func addListener(
         objectID: AudioObjectID, address: AudioObjectPropertyAddress, block: @escaping AudioObjectPropertyListenerBlock

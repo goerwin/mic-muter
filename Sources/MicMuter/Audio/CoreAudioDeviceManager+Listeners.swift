@@ -77,12 +77,21 @@ extension CoreAudioDeviceManager {
                     self.reconcileStaleFallbackState(for: device)
                 }
                 self.onChange?()
+                self.scheduleMonitoringRetry()
             }
         }
     }
 
-    func scheduleListenerRetry() {
-        guard !failedListenerKeys.isEmpty, retryTask == nil else { return }
+    func scheduleMonitoringRetry() {
+        let needsRetry =
+            !failedListenerKeys.isEmpty || deviceEnumerationFailed || defaultInputReadFailed
+        guard isMonitoring else { return }
+        guard needsRetry else {
+            retryTask?.cancel()
+            retryTask = nil
+            return
+        }
+        guard retryTask == nil else { return }
         retryTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled, let self, self.isMonitoring else { return }

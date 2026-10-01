@@ -6,6 +6,7 @@ protocol AudioDeviceManaging: AnyObject {
     var defaultInputUID: String? { get }
     var onChange: (() -> Void)? { get set }
 
+    /// Starts observation and synchronously publishes the initial device snapshot through `onChange`.
     func startMonitoring()
     func stopMonitoring()
     func state(for device: AudioInputDevice) -> AudioDeviceState

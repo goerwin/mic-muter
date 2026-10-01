@@ -5,9 +5,6 @@ import PackageDescription
 let package = Package(
     name: "MicMuter",
     platforms: [.macOS(.v14)],
-    products: [
-        .library(name: "MicMuterCore", targets: ["MicMuterCore"])
-    ],
     targets: [
         .target(
             name: "MicMuterCore",

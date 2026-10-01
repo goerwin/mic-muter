@@ -25,6 +25,8 @@ final class CoreAudioDeviceManager {
     var defaultInputChanged = false
     var changedDeviceUIDs: Set<String> = []
     var failedListenerKeys: Set<String> = []
+    var deviceEnumerationFailed = false
+    var defaultInputReadFailed = false
     let logger = Logger(subsystem: "com.goerwin.MicMuter", category: "AudioMonitoring")
     private let volumeStore: any VolumeStoring
     private let propertyAccess: any AudioDevicePropertyAccess
@@ -39,7 +41,10 @@ final class CoreAudioDeviceManager {
     }
 
     func startMonitoring() {
-        guard !isMonitoring else { return }
+        guard !isMonitoring else {
+            onChange?()
+            return
+        }
         isMonitoring = true
         refresh()
     }
@@ -53,6 +58,8 @@ final class CoreAudioDeviceManager {
         topologyChanged = false
         defaultInputChanged = false
         changedDeviceUIDs.removeAll()
+        deviceEnumerationFailed = false
+        defaultInputReadFailed = false
         for key in Array(listeners.keys) { removeListener(key: key) }
         failedListenerKeys.removeAll()
     }
@@ -73,8 +80,22 @@ final class CoreAudioDeviceManager {
     func refresh() {
         guard isMonitoring else { return }
         registerSystemListeners()
-        let newDevices = monitor.enumerateInputDevices()
+        do {
+            updateDevices(try monitor.enumerateInputDevices())
+            deviceEnumerationFailed = false
+        } catch {
+            if !deviceEnumerationFailed {
+                logger.error("Input device enumeration failed: \(String(describing: error), privacy: .public)")
+            }
+            deviceEnumerationFailed = true
+        }
 
+        refreshDefaultInput()
+        onChange?()
+        scheduleMonitoringRetry()
+    }
+
+    private func updateDevices(_ newDevices: [AudioInputDevice]) {
         for device in inputDevices
         where !newDevices.contains(where: { $0.uid == device.uid && $0.objectID == device.objectID }) {
             removeDeviceListeners(for: device)
@@ -99,15 +120,21 @@ final class CoreAudioDeviceManager {
         }
 
         inputDevices = newDevices
-        refreshDefaultInput()
         reconcileStaleFallbackState()
-        onChange?()
-        scheduleListenerRetry()
     }
 
     func refreshDefaultInput() {
-        defaultInputUID = monitor.defaultInputDeviceID().flatMap { id in
-            inputDevices.first(where: { $0.objectID == id })?.uid
+        do {
+            let defaultDeviceID = try monitor.defaultInputDeviceID()
+            defaultInputReadFailed = false
+            defaultInputUID = defaultDeviceID.flatMap { id in
+                inputDevices.first(where: { $0.objectID == id })?.uid
+            }
+        } catch {
+            if !defaultInputReadFailed {
+                logger.error("Default input device read failed: \(String(describing: error), privacy: .public)")
+            }
+            defaultInputReadFailed = true
         }
     }
 
