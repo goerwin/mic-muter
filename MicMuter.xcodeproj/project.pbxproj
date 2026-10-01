@@ -15,6 +15,7 @@
 		A10000000000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000009 /* Assets.xcassets */; };
 		A10000000000000000000009 /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000A /* MenuBarIcon.swift */; };
 		A1000000000000000000000A /* StatusBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000B /* StatusBarController.swift */; };
+		A1000000000000000000000B /* HUDOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1000000000000000000000C /* HUDOverlayController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 		C10000000000000000000009 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Resources/Assets.xcassets; sourceTree = "<group>"; };
 		C1000000000000000000000A /* MenuBarIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarIcon.swift; sourceTree = "<group>"; };
 		C1000000000000000000000B /* StatusBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBarController.swift; sourceTree = "<group>"; };
+		C1000000000000000000000C /* HUDOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HUDOverlayController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +80,7 @@
 			children = (
 				C10000000000000000000004 /* MenuPopoverView.swift */,
 				C1000000000000000000000A /* MenuBarIcon.swift */,
+				C1000000000000000000000C /* HUDOverlayController.swift */,
 			);
 			path = Sources/MicMuter/UI;
 			sourceTree = "<group>";
@@ -174,6 +177,7 @@
 				A10000000000000000000007 /* MicStatus.swift in Sources */,
 				A10000000000000000000009 /* MenuBarIcon.swift in Sources */,
 				A1000000000000000000000A /* StatusBarController.swift in Sources */,
+				A1000000000000000000000B /* HUDOverlayController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

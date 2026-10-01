@@ -11,9 +11,9 @@ enum MicStatus: Equatable {
     var title: String {
         switch self {
         case .muted:
-            "Microphone muted"
+            "Microphone OFF"
         case .unmuted:
-            "Microphone on"
+            "Microphone ON"
         case .inputSilent:
             "Input level is zero"
         case .unknown:

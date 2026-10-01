@@ -15,10 +15,14 @@ struct MicMuterApp: App {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: MicMuterModel?
     private var statusBar: StatusBarController?
+    private let hud = HUDOverlayController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let model = MicMuterModel()
         self.model = model
         statusBar = StatusBarController(model: model)
+        model.onToggleFeedback = { [hud] status, deviceName in
+            hud.present(status: status, deviceName: deviceName)
+        }
     }
 }

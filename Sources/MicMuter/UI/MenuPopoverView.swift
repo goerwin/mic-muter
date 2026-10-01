@@ -12,6 +12,7 @@ struct MenuPopoverView: View {
             VStack(alignment: .leading, spacing: 10) {
                 shortcutRow
                 launchAtLoginRow
+                showHUDOnToggleRow
             }
             HStack {
                 Text("Mic Muter \(appVersion)")
@@ -141,6 +142,18 @@ struct MenuPopoverView: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private var showHUDOnToggleRow: some View {
+        Toggle(
+            "Show HUD on Toggle",
+            isOn: Binding(
+                get: { model.showHUDOnToggle },
+                set: { model.setShowHUDOnToggle($0) }
+            )
+        )
+        .toggleStyle(.checkbox)
+        .accessibilityHint("Displays a brief overlay confirming the new microphone state")
     }
 
     private var selectedDeviceBinding: Binding<String?> {

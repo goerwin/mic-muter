@@ -10,9 +10,8 @@ A menu-bar-only macOS app that mutes and unmutes the microphone you select. Clic
 - **Any input device.** Pick a microphone, or leave it on System Default to follow whatever macOS considers current. The list updates when devices come and go.
 - **Real mute, with a fallback.** Mic Muter sets the device's own mute control when one exists. Devices exposing only a volume control, such as many webcams, are muted by dropping their input level to zero, and the previous level is restored on unmute.
 - **Six-state icon.** Muted, unmuted, input-silent, unknown, unsupported, and disconnected, so a device that cannot be muted never looks like a working one.
+- **Optional HUD.** Off by default. Turn on "Show HUD on Toggle" and each toggle briefly shows the new state and device name in the center of the screen, so you get confirmation without opening the popover.
 - **Accessible.** Every state has its own spoken description, and the status item is labelled for VoiceOver.
-
-Mic Muter reads the system's Core Audio mute state. It cannot see per-app mute toggles inside Zoom or Teams, since those are private to those apps.
 
 ## Installing
 

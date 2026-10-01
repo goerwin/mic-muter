@@ -14,6 +14,7 @@ final class MicMuterModel {
     private let audio = CoreAudioDeviceManager()
     private let selectedUIDKey = "selectedInputDeviceUID"
     private let selectedNameKey = "selectedInputDeviceName"
+    private let showHUDOnToggleKey = "showHUDOnToggle"
 
     private(set) var devices: [AudioInputDevice] = []
     private(set) var defaultInputUID: String?
@@ -23,10 +24,14 @@ final class MicMuterModel {
     private(set) var errorMessage: String?
     private(set) var launchAtLoginError: String?
     private(set) var launchAtLoginEnabled = false
+    private(set) var showHUDOnToggle: Bool
+
+    var onToggleFeedback: ((MicStatus, String) -> Void)?
 
     init() {
         selectedDeviceUID = UserDefaults.standard.string(forKey: selectedUIDKey)
         selectedDeviceNameSnapshot = UserDefaults.standard.string(forKey: selectedNameKey)
+        showHUDOnToggle = UserDefaults.standard.bool(forKey: showHUDOnToggleKey)
 
         audio.onChange = { [weak self] in
             Task { @MainActor [weak self] in
@@ -112,10 +117,17 @@ final class MicMuterModel {
             try audio.setMuted(shouldMute, for: selectedDevice)
             errorMessage = nil
             refreshFromAudio()
-            status = shouldMute ? .muted : .unmuted
+            let newStatus: MicStatus = shouldMute ? .muted : .unmuted
+            status = newStatus
+            if showHUDOnToggle {
+                onToggleFeedback?(newStatus, selectedInputName)
+            }
         } catch {
             errorMessage = error.localizedDescription
             refreshFromAudio()
+            if showHUDOnToggle {
+                onToggleFeedback?(status, selectedInputName)
+            }
         }
     }
 
@@ -131,6 +143,11 @@ final class MicMuterModel {
             launchAtLoginError = error.localizedDescription
         }
         refreshLoginAtLaunchState()
+    }
+
+    func setShowHUDOnToggle(_ isEnabled: Bool) {
+        showHUDOnToggle = isEnabled
+        UserDefaults.standard.set(isEnabled, forKey: showHUDOnToggleKey)
     }
 
     func terminate() {
