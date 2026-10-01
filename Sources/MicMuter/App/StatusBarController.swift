@@ -20,8 +20,8 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         popover.delegate = self
 
         statusItem.button?.target = self
-        statusItem.button?.action = #selector(togglePopover(_:))
-        statusItem.button?.sendAction(on: [.leftMouseUp])
+        statusItem.button?.action = #selector(handleClick(_:))
+        statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         updateButton()
         observeModel()
 
@@ -53,8 +53,23 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         updateButton()
     }
 
-    @objc private func togglePopover(_ sender: Any?) {
+    @objc private func handleClick(_ sender: Any?) {
         guard let button = statusItem.button else { return }
+
+        let isLeftClick = NSApp.currentEvent?.type == .leftMouseUp
+
+        if isLeftClick {
+            model.toggleMute()
+            if popover.isShown {
+                popover.performClose(sender)
+            }
+            return
+        }
+
+        togglePopover(from: button, sender: sender)
+    }
+
+    private func togglePopover(from button: NSStatusBarButton, sender: Any?) {
         if popover.isShown {
             popover.performClose(sender)
             return
@@ -99,7 +114,7 @@ final class StatusBarController: NSObject, NSPopoverDelegate {
         let image = MenuBarIcon.image(for: model.status)
         button.image = image
         button.image?.isTemplate = image.isTemplate
-        button.toolTip = "Mic Muter: \(model.status.title)"
+        button.toolTip = "Mic Muter: \(model.status.title). Click to toggle, right-click for options."
         button.setAccessibilityLabel("Mic Muter. \(model.status.accessibilityDescription)")
     }
 }

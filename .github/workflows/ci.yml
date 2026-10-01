@@ -4,9 +4,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_call:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Deliberately not github.workflow: a called workflow sees the caller's name
+  # there, so a shared group plus cancel-in-progress cancels the release run.
+  group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -25,11 +28,8 @@ jobs:
       - name: Test
         run: make test
 
-      # `make test` only covers the MicMuterState SwiftPM target. Without this
-      # the app target is never compiled in CI, so a broken build can merge.
       - name: Build app
         run: make build
 
-      # Catches a missing or unresolved version, the most likely CI-only failure.
       - name: Package DMG
         run: make release VERSION=0.0.0-ci

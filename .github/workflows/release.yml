@@ -1,7 +1,5 @@
 name: Release
 
-# Pushing a vX.Y.Z tag builds a universal DMG and attaches it to a GitHub
-# Release. The tag is the only source of truth for the bundle version.
 on:
   push:
     tags:
@@ -16,19 +14,27 @@ permissions:
   contents: write
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+
   release:
+    needs: checks
     runs-on: macos-latest
     env:
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
+        # fetch-depth: 0 so release-notes.sh can see the previous tag. `ref` is
+        # pinned because a dispatch has no tag ref and would build main instead.
+        with:
+          ref: ${{ env.TAG }}
+          fetch-depth: 0
 
-      # Validates the tag before spending minutes on a universal build.
       - name: Resolve version
         run: |
           set -euo pipefail
@@ -48,12 +54,14 @@ jobs:
           shasum -a 256 "Mic Muter.dmg" > SHA256SUMS
 
       - name: Create GitHub Release
+        shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          notes=$(Scripts/release-notes.sh "$TAG")
           gh release create "$TAG" \
             "dist/Mic Muter.dmg" \
             dist/SHA256SUMS \
             --title "Mic Muter $VERSION" \
-            --generate-notes \
+            --notes "$notes" \
             --verify-tag
