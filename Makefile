@@ -43,4 +43,4 @@ release:
 	DIST_DIR="$(DIST_DIR)" ./Scripts/make-dmg.sh "$(APP_SOURCE)"
 
 clean:
-	rm -rf "$(DIST_DIR)"
+	rm -rf "$(BUILD_DIR)" "$(DIST_DIR)"

@@ -48,9 +48,3 @@ final class MicStatusTests: XCTestCase {
         }
     }
 }
-
-extension MicStatus {
-    fileprivate static var allCases: [MicStatus] {
-        [.muted, .unmuted, .inputSilent, .unknown, .unsupported, .disconnected]
-    }
-}

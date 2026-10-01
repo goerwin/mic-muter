@@ -24,6 +24,7 @@
 		A10000000000000000000011 /* CoreAudioDeviceManager+Persistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */; };
 		A10000000000000000000012 /* CoreAudioDeviceManager+Properties.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */; };
 		A10000000000000000000013 /* AudioDeviceManaging.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000014 /* AudioDeviceManaging.swift */; };
+		A10000000000000000000015 /* MockAudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000016 /* MockAudioManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -46,6 +47,7 @@
 		C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Persistence.swift"; sourceTree = "<group>"; };
 		C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "CoreAudioDeviceManager+Properties.swift"; sourceTree = "<group>"; };
 		C10000000000000000000014 /* AudioDeviceManaging.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDeviceManaging.swift; sourceTree = "<group>"; };
+		C10000000000000000000016 /* MockAudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MockAudioManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -93,6 +95,7 @@
 				C10000000000000000000012 /* CoreAudioDeviceManager+Persistence.swift */,
 				C10000000000000000000013 /* CoreAudioDeviceManager+Properties.swift */,
 				C10000000000000000000014 /* AudioDeviceManaging.swift */,
+				C10000000000000000000016 /* MockAudioManager.swift */,
 			);
 			path = Sources/MicMuter/Audio;
 			sourceTree = "<group>";
@@ -203,6 +206,7 @@
 				A10000000000000000000011 /* CoreAudioDeviceManager+Persistence.swift in Sources */,
 				A10000000000000000000012 /* CoreAudioDeviceManager+Properties.swift in Sources */,
 				A10000000000000000000013 /* AudioDeviceManaging.swift in Sources */,
+				A10000000000000000000015 /* MockAudioManager.swift in Sources */,
 				A10000000000000000000004 /* MenuPopoverView.swift in Sources */,
 				A10000000000000000000007 /* MicStatus.swift in Sources */,
 				A10000000000000000000009 /* MenuBarIcon.swift in Sources */,

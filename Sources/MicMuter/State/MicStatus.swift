@@ -1,4 +1,4 @@
-enum MicStatus: Equatable {
+enum MicStatus: Equatable, CaseIterable {
     case muted
     case unmuted
     case inputSilent
