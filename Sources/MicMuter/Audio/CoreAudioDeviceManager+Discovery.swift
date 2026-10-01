@@ -2,7 +2,7 @@ import CoreAudio
 
 extension CoreAudioDeviceManager {
     func enumerateInputDevices() -> [AudioInputDevice] {
-        var address = propertyAddress(kAudioHardwarePropertyDevices)
+        var address = audioPropertyAddress(kAudioHardwarePropertyDevices)
         var dataSize: UInt32 = 0
         guard AudioObjectGetPropertyDataSize(systemObject, &address, 0, nil, &dataSize) == noErr else {
             return []
@@ -40,7 +40,7 @@ extension CoreAudioDeviceManager {
     }
 
     func inputChannelCount(for objectID: AudioObjectID) -> Int {
-        var address = propertyAddress(
+        var address = audioPropertyAddress(
             kAudioDevicePropertyStreamConfiguration,
             scope: kAudioDevicePropertyScopeInput
         )
@@ -65,7 +65,7 @@ extension CoreAudioDeviceManager {
     }
 
     func defaultInputDeviceID() -> AudioDeviceID? {
-        var address = propertyAddress(kAudioHardwarePropertyDefaultInputDevice)
+        var address = audioPropertyAddress(kAudioHardwarePropertyDefaultInputDevice)
         var objectID = AudioDeviceID(kAudioObjectUnknown)
         var dataSize = UInt32(MemoryLayout<AudioDeviceID>.size)
         let status = AudioObjectGetPropertyData(systemObject, &address, 0, nil, &dataSize, &objectID)

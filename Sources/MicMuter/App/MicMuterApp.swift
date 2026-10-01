@@ -19,7 +19,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let hud = HUDOverlayController()
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let audio = CoreAudioDeviceManager(volumeStore: VolumeStore())
+        let audio = CoreAudioDeviceManager(
+            volumeStore: VolumeStore(),
+            propertyAccess: CoreAudioDevicePropertyAccess()
+        )
         let model = MicMuterModel(
             audio: audio,
             selectionStore: DeviceSelectionStore(),

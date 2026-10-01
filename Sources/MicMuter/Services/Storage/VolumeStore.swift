@@ -9,12 +9,15 @@ protocol VolumeStoring: AnyObject {
     func clearSavedInputLevel(forDeviceUID uid: String)
     func isFallbackMuteActive(forDeviceUID uid: String) -> Bool
     func setFallbackMuteActive(_ isActive: Bool, forDeviceUID uid: String)
+    func isRestorePending(forDeviceUID uid: String) -> Bool
+    func setRestorePending(_ isPending: Bool, forDeviceUID uid: String)
 }
 
 @MainActor
 final class VolumeStore: VolumeStoring {
     private let fallbackMutePrefix = "mutedByInputVolume."
     private let savedVolumePrefix = "savedInputVolume."
+    private let restorePendingPrefix = "inputVolumeRestorePending."
     private let defaults: UserDefaults
 
     init(defaults: UserDefaults = .standard) {
@@ -36,6 +39,7 @@ final class VolumeStore: VolumeStoring {
     func clearSavedInputLevel(forDeviceUID uid: String) {
         defaults.removeObject(forKey: savedVolumePrefix + uid)
         defaults.removeObject(forKey: fallbackMutePrefix + uid)
+        defaults.removeObject(forKey: restorePendingPrefix + uid)
     }
 
     func isFallbackMuteActive(forDeviceUID uid: String) -> Bool {
@@ -44,6 +48,14 @@ final class VolumeStore: VolumeStoring {
 
     func setFallbackMuteActive(_ isActive: Bool, forDeviceUID uid: String) {
         defaults.set(isActive, forKey: fallbackMutePrefix + uid)
+    }
+
+    func isRestorePending(forDeviceUID uid: String) -> Bool {
+        defaults.bool(forKey: restorePendingPrefix + uid)
+    }
+
+    func setRestorePending(_ isPending: Bool, forDeviceUID uid: String) {
+        defaults.set(isPending, forKey: restorePendingPrefix + uid)
     }
 }
 

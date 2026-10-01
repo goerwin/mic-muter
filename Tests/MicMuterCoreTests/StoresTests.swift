@@ -39,16 +39,20 @@ final class StoresTests: XCTestCase {
 
         XCTAssertNil(store.savedInputLevel(forDeviceUID: uid))
         XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: uid))
+        XCTAssertFalse(store.isRestorePending(forDeviceUID: uid))
 
         store.saveInputLevel([VolumeSnapshot(element: 1, value: 0.5)], forDeviceUID: uid)
         XCTAssertEqual(store.savedInputLevel(forDeviceUID: uid), [VolumeSnapshot(element: 1, value: 0.5)])
 
         store.setFallbackMuteActive(true, forDeviceUID: uid)
         XCTAssertTrue(store.isFallbackMuteActive(forDeviceUID: uid))
+        store.setRestorePending(true, forDeviceUID: uid)
+        XCTAssertTrue(store.isRestorePending(forDeviceUID: uid))
 
         store.clearSavedInputLevel(forDeviceUID: uid)
         XCTAssertNil(store.savedInputLevel(forDeviceUID: uid))
         XCTAssertFalse(store.isFallbackMuteActive(forDeviceUID: uid))
+        XCTAssertFalse(store.isRestorePending(forDeviceUID: uid))
     }
 
     func testVolumeStoreReadsExistingSavedVolumeFormat() {

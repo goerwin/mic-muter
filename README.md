@@ -27,10 +27,10 @@ Needs Xcode and `swift-format`.
 
 - `App/` is the composition root and AppKit status-item bridge.
 - `Features/Mute/` contains the observable model and pure status mapping.
-- `Audio/` owns the Core Audio adapter and audio-domain types; device access is behind `AudioDeviceManaging`.
+- `Audio/` owns the Core Audio adapter and audio-domain types; the model uses `AudioDeviceManaging`, while mute-property I/O is injectable through `AudioDevicePropertyAccess`.
 - `Services/Storage/` owns UserDefaults persistence; `Services/System/` wraps login-item and shortcut APIs.
 - `State/` holds presentation state, while `UI/` contains the menu-bar, HUD, and reusable SwiftUI views.
-- `Tests/MicMuterCoreTests/` exercises model behavior, status mapping, and storage without real devices or system settings.
+- `Tests/MicMuterCoreTests/` exercises model behavior, status mapping, storage, and mute fallback with simulated device properties.
 
 `AppDelegate` wires the concrete services into `MicMuterModel`. The model depends on protocols rather than AppKit, ServiceManagement, or UserDefaults directly. The SwiftPM core target excludes the app and UI so the same non-UI code can be tested independently; the app itself is built by the Xcode project.
 
