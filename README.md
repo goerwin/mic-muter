@@ -6,7 +6,7 @@ A menu-bar-only macOS app that mutes and unmutes the microphone you select. Clic
 
 ## Features
 
-- **Menu bar only.** No dock icon and no window. Left-click to toggle mute; right-click opens the popover, where the device picker, shortcut recorder, and Launch at Login live.
+- **Menu bar only.** No dock icon and no main window. Left-click to toggle mute; right-click opens the popover, where the device picker, shortcut recorder, and Launch at Login live.
 - **Any input device.** Pick a microphone, or leave it on System Default to follow whatever macOS considers current. The list updates when devices come and go.
 - **Real mute, with a fallback.** Mic Muter sets the device's own mute control when one exists. Devices exposing only a volume control, such as many webcams, are muted by dropping their input level to zero, and the previous level is restored on unmute.
 - **Six-state icon.** Muted, unmuted, input-silent, unknown, unsupported, and disconnected, so a device that cannot be muted never looks like a working one.
