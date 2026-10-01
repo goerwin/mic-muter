@@ -1,6 +1,8 @@
 # Mic Muter
 
-<img src="Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-256.png" width="128" alt="Mic Muter icon">
+<p align="center">
+  <img src="Resources/Assets.xcassets/AppIcon.appiconset/AppIcon-256.png" width="128" alt="Mic Muter icon" style="border: 1px solid #d0d7de; border-radius: 50%;">
+</p>
 
 A menu-bar-only macOS app that mutes and unmutes the microphone you select. Click the menu bar icon, or assign a global shortcut.
 
@@ -46,9 +48,7 @@ Needs Xcode and `swift-format`.
 
 Pushing a `vMAJOR.MINOR.PATCH` tag builds a universal DMG and attaches it to a GitHub Release. The tag is the only source of truth for the version.
 
-```sh
-git tag v1.0.0 && git push origin v1.0.0
-```
+Run `make release-patch`, `make release-minor`, or `make release-major`. These targets call `Scripts/release.sh`, which fetches the tags, bumps the latest stable version, shows the version and commit, then asks for confirmation before pushing the new tag to `origin`. Keep your working tree clean first.
 
 Or trigger it from the Actions tab via *Release* > *Run workflow* with the tag you want.
 

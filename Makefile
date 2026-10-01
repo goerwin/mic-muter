@@ -19,7 +19,7 @@ XCODEBUILD = SWIFTPM_MODULECACHE_OVERRIDE="$(CURDIR)/$(BUILD_DIR)/SwiftPMModuleC
 	-clonedSourcePackagesDirPath "$(SOURCE_PACKAGES)" \
 	CLANG_MODULE_CACHE_PATH="$(CURDIR)/$(BUILD_DIR)/ClangModuleCache"
 
-.PHONY: build test lint install release clean
+.PHONY: build test lint install release release-patch release-minor release-major clean
 
 build:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache" "$(BUILD_DIR)/ClangModuleCache"
@@ -43,6 +43,15 @@ release:
 	$(XCODEBUILD) -configuration Release ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
 	@test -d "$(APP_SOURCE)" || { echo "expected an app at $(APP_SOURCE)" >&2; exit 1; }
 	DIST_DIR="$(DIST_DIR)" ./Scripts/make-dmg.sh "$(APP_SOURCE)"
+
+release-patch:
+	./Scripts/release.sh patch
+
+release-minor:
+	./Scripts/release.sh minor
+
+release-major:
+	./Scripts/release.sh major
 
 clean:
 	rm -rf "$(BUILD_DIR)" "$(DIST_DIR)"
