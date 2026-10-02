@@ -35,8 +35,7 @@ enum MenuBarIcon {
             ?? NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
         guard let base else { return NSImage(size: canvasSize) }
 
-        let opacity: CGFloat = status == .unmuted ? 1 : 0.55
-        return fittedImage(from: base, opacity: opacity)
+        return fittedImage(from: base, opacity: 1)
     }
 
     private static func fittedImage(from base: NSImage, opacity: CGFloat = 1) -> NSImage {
