@@ -96,8 +96,7 @@ if [[ $preview -eq 1 ]]; then
   exit 0
 fi
 
-printf 'Pushing this tag starts the GitHub release workflow.\n\n'
-printf 'Proceed? [y/N] '
+printf 'Pushing this tag starts the GitHub release workflow. Proceed? [y/N] '
 IFS= read -r answer || answer=""
 
 case "$answer" in
