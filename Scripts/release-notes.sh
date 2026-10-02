@@ -4,10 +4,10 @@ set -euo pipefail
 # Release notes from commits between previous tag and given tag.
 # Groups Conventional Commits by type; needs full clone (fetch-depth: 0).
 
-tag="${1:?usage: release-notes.sh vX.Y.Z}"
+tag="${1:?usage: release-notes.sh <tag-or-rev>}"
 
-if ! git rev-parse --verify --quiet "$tag^{commit}" >/dev/null; then
-  echo "Tag '$tag' does not resolve to a commit" >&2
+if ! git rev-parse --verify --quiet "${tag}^{commit}" >/dev/null; then
+  echo "Ref '$tag' does not resolve to a commit" >&2
   exit 1
 fi
 

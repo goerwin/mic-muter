@@ -2,8 +2,14 @@
 set -euo pipefail
 
 usage() {
-  echo "Usage: ./Scripts/release.sh <patch|minor|major>" >&2
+  echo "Usage: ./Scripts/release.sh <patch|minor|major> [--preview]" >&2
 }
+
+preview=0
+if [[ $# -eq 2 && ( "$2" == "--preview" || "$2" == "-n" ) ]]; then
+  preview=1
+  set -- "$1"
+fi
 
 if [[ $# -ne 1 ]]; then
   usage
@@ -80,8 +86,17 @@ if git show-ref --verify --quiet "refs/tags/$new_tag"; then
 fi
 
 printf '\n🚀 %s Release: %s → %s\n\n' "$release_type" "$latest_tag" "$new_tag"
-printf '🏷️  New tag: %s\n' "$new_tag"
-printf '   Pushing this tag starts the GitHub release workflow.\n\n'
+printf '🏷️  New tag: %s\n\n' "$new_tag"
+printf '📝 Release notes preview:\n\n'
+"$repo_root/Scripts/release-notes.sh" HEAD
+printf '\n'
+
+if [[ $preview -eq 1 ]]; then
+  echo "Preview only. No tag was created or pushed."
+  exit 0
+fi
+
+printf 'Pushing this tag starts the GitHub release workflow.\n\n'
 printf 'Proceed? [y/N] '
 IFS= read -r answer || answer=""
 
