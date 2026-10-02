@@ -36,6 +36,7 @@
 		A2000000000000000000000C /* DevicePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000F /* DevicePickerView.swift */; };
 		A2000000000000000000000D /* SettingsRowsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000010 /* SettingsRowsView.swift */; };
 		A2000000000000000000000E /* CircularMuteButtonStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000011 /* CircularMuteButtonStyle.swift */; };
+		A2000000000000000000000F /* AppInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000016 /* AppInfo.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -70,6 +71,7 @@
 		C2000000000000000000000F /* DevicePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DevicePickerView.swift; sourceTree = "<group>"; };
 		C20000000000000000000010 /* SettingsRowsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsRowsView.swift; sourceTree = "<group>"; };
 		C20000000000000000000011 /* CircularMuteButtonStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircularMuteButtonStyle.swift; sourceTree = "<group>"; };
+		C10000000000000000000016 /* AppInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppInfo.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -104,6 +106,7 @@
 			children = (
 				C10000000000000000000001 /* MicMuterApp.swift */,
 				C1000000000000000000000B /* StatusBarController.swift */,
+				C10000000000000000000016 /* AppInfo.swift */,
 			);
 			path = Sources/MicMuter/App;
 			sourceTree = "<group>";
@@ -322,6 +325,7 @@
 				A2000000000000000000000C /* DevicePickerView.swift in Sources */,
 				A2000000000000000000000D /* SettingsRowsView.swift in Sources */,
 				A2000000000000000000000E /* CircularMuteButtonStyle.swift in Sources */,
+				A2000000000000000000000F /* AppInfo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -73,7 +73,7 @@ final class StatusBarController: NSObject {
     private func updateButton() {
         guard let button = statusItem.button else { return }
         button.image = MenuBarIcon.image(for: model.status)
-        button.toolTip = "Mic Muter: \(model.status.title). Click to toggle, right-click for options."
-        button.setAccessibilityLabel("Mic Muter. \(model.status.accessibilityDescription)")
+        button.toolTip = "\(AppInfo.name): \(model.status.title). Click to toggle, right-click for options."
+        button.setAccessibilityLabel("\(AppInfo.name). \(model.status.accessibilityDescription)")
     }
 }

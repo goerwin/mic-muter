@@ -26,7 +26,7 @@ struct SettingsRowsView: View {
                 .toggleStyle(.checkbox)
 
                 if model.launchAtLoginStatus == .requiresApproval {
-                    Text("Allow Mic Muter in Login Items settings to finish enabling it.")
+                    Text("Allow \(AppInfo.name) in Login Items settings to finish enabling it.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)

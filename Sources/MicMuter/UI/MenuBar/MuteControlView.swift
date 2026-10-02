@@ -66,7 +66,7 @@ struct MuteControlView: View {
         case .unmuted, .unknown:
             "Mute the selected input device"
         case .inputSilent:
-            "The input level is zero and cannot be restored by Mic Muter"
+            "The input level is zero and cannot be restored by \(AppInfo.name)"
         case .unsupported:
             "This input device does not provide a writable mute control"
         case .disconnected:
