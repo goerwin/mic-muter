@@ -4,10 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
-  workflow_call:
 
 concurrency:
-  # Shared group so release run cancels prior CI run.
+  # Cancel superseded runs for the same ref.
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
@@ -29,6 +28,3 @@ jobs:
 
       - name: Build app
         run: make build
-
-      - name: Package DMG
-        run: make release VERSION=0.0.0-ci

@@ -9,29 +9,23 @@ on:
       tag:
         description: "Tag to release (e.g. v1.0.0)"
         required: true
+        type: string
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  checks:
-    uses: ./.github/workflows/ci.yml
-
   release:
-    needs: checks
     runs-on: macos-latest
+    permissions:
+      contents: write
     env:
       TAG: ${{ github.event.inputs.tag || github.ref_name }}
-      BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64 }}
-      P12_PASSWORD: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64_PASSWORD }}
-      KEYCHAIN_PASSWORD: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64_PASSWORD }}
-      APP_CERTIFICATE: ${{ secrets.MAC_APP_CERTIFICATE }}
       DEVELOPMENT_TEAM: PCZ58H68H5
-      SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -50,10 +44,21 @@ jobs:
           fi
           echo "VERSION=$version" >> "$GITHUB_ENV"
 
+      - name: Lint
+        run: make lint
+
+      - name: Test
+        run: make test
+
       - name: Install signing certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.MAC_BUILD_CERTIFICATE_BASE64_PASSWORD }}
+          APP_CERTIFICATE: ${{ secrets.MAC_APP_CERTIFICATE }}
         run: |
           set -euo pipefail
-          for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD KEYCHAIN_PASSWORD APP_CERTIFICATE SPARKLE_PRIVATE_KEY; do
+          for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD KEYCHAIN_PASSWORD APP_CERTIFICATE; do
             [[ -n "${!name}" ]] || { echo "$name is required" >&2; exit 1; }
           done
 
@@ -69,6 +74,8 @@ jobs:
           security list-keychain -d user -s "$keychain"
 
       - name: Build DMG
+        env:
+          APP_CERTIFICATE: ${{ secrets.MAC_APP_CERTIFICATE }}
         run: make release VERSION="$VERSION" CODE_SIGNING_IDENTITY="$APP_CERTIFICATE" CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="$DEVELOPMENT_TEAM"
 
       - name: Checksum
@@ -79,6 +86,7 @@ jobs:
       - name: Prepare update feed
         env:
           REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
           name="MicMuter-$VERSION"
