@@ -13,7 +13,7 @@ A menu bar app for muting and unmuting your selected microphone with a click or 
 - See six status states, an optional toggle HUD, and VoiceOver labels.
 - Optionally launch at login.
 
-## Install
+## Installation
 
 Requires macOS 14 or later. Download `MicMuter-<version>.dmg` from the [latest release](https://github.com/goerwin/mic-muter/releases/latest), open it, and drag `Mic Muter.app` to `/Applications`.
 
@@ -44,3 +44,7 @@ Run `make release-patch`, `make release-minor`, or `make release-major` to previ
 Pushing a `vMAJOR.MINOR.PATCH` tag publishes `MicMuter-<version>.dmg`, `MicMuter-<version>-SHA256SUMS`, and `appcast.xml`. Verify the DMG with `shasum -c MicMuter-<version>-SHA256SUMS`.
 
 GitHub Actions needs the repository secrets `MAC_APP_CERTIFICATE`, `MAC_BUILD_CERTIFICATE_BASE64`, `MAC_BUILD_CERTIFICATE_BASE64_PASSWORD`, and `SPARKLE_PRIVATE_KEY` to publish releases.
+
+## License
+
+Mic Muter's source code is licensed under the [MIT License](LICENSE). The Mic Muter name, app icon, and original brand artwork are not covered by that license and are all rights reserved. Unofficial forks and redistributions must use their own branding and must not imply endorsement or affiliation.
