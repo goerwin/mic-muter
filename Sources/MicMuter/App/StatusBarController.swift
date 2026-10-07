@@ -8,11 +8,16 @@ final class StatusBarController: NSObject {
     private let popover = NSPopover()
     private var appearanceObserver: NSKeyValueObservation?
 
-    init(model: MicMuterModel) {
+    init(model: MicMuterModel, onCheckForUpdates: @escaping () -> Void) {
         self.model = model
         super.init()
 
-        let hosting = NSHostingController(rootView: MenuPopoverView(model: model))
+        let hosting = NSHostingController(
+            rootView: MenuPopoverView(model: model) { [weak self] in
+                self?.popover.performClose(nil)
+                onCheckForUpdates()
+            }
+        )
         hosting.sizingOptions = .preferredContentSize
         popover.contentViewController = hosting
         popover.behavior = .transient

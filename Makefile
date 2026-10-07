@@ -10,6 +10,13 @@ APP_SOURCE := $(DERIVED_DATA)/Build/Products/Release/$(APP_NAME).app
 
 # Set by CI from git tag. Default keeps `make install`/`release` working.
 VERSION ?= 1.0.0
+CODE_SIGNING_IDENTITY ?=
+CODE_SIGN_STYLE ?=
+DEVELOPMENT_TEAM ?=
+
+CODE_SIGNING_ARGS = $(if $(strip $(CODE_SIGNING_IDENTITY)),CODE_SIGN_IDENTITY="$(CODE_SIGNING_IDENTITY)") \
+	$(if $(strip $(CODE_SIGN_STYLE)),CODE_SIGN_STYLE="$(CODE_SIGN_STYLE)") \
+	$(if $(strip $(DEVELOPMENT_TEAM)),DEVELOPMENT_TEAM="$(DEVELOPMENT_TEAM)")
 
 XCODEBUILD = SWIFTPM_MODULECACHE_OVERRIDE="$(CURDIR)/$(BUILD_DIR)/SwiftPMModuleCache" xcodebuild \
 	-project "$(PROJECT)" \
@@ -37,10 +44,10 @@ lint:
 install:
 	./install.zsh
 
-# Build universal Release .app and package into $(DIST_DIR).
+# Build universal Release .app and package into $(DIST_DIR) as MicMuter-$(VERSION).dmg.
 release:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache" "$(BUILD_DIR)/ClangModuleCache"
-	$(XCODEBUILD) -configuration Release ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" build
+	$(XCODEBUILD) -configuration Release ARCHS="arm64 x86_64" ONLY_ACTIVE_ARCH=NO MARKETING_VERSION="$(VERSION)" CURRENT_PROJECT_VERSION="$(VERSION)" $(CODE_SIGNING_ARGS) build
 	@test -d "$(APP_SOURCE)" || { echo "expected an app at $(APP_SOURCE)" >&2; exit 1; }
 	DIST_DIR="$(DIST_DIR)" ./Scripts/make-dmg.sh "$(APP_SOURCE)"
 

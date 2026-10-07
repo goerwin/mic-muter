@@ -1,4 +1,5 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 @main
@@ -17,6 +18,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var model: MicMuterModel?
     private var statusBar: StatusBarController?
     private let hud = HUDOverlayController()
+    private let updater = SPUStandardUpdaterController(
+        startingUpdater: true, updaterDelegate: nil, userDriverDelegate: nil
+    )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         let audio = CoreAudioDeviceManager(
@@ -35,7 +39,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             terminator: { NSApp.terminate(nil) }
         )
         self.model = model
-        statusBar = StatusBarController(model: model)
+        statusBar = StatusBarController(model: model) { [unowned self] in
+            NSApp.activate(ignoringOtherApps: true)
+            self.updater.checkForUpdates(nil)
+        }
     }
 
     func applicationWillTerminate(_ notification: Notification) {

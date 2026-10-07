@@ -17,9 +17,11 @@ A menu-bar-only macOS app that mutes and unmutes the microphone you select. Clic
 
 ## Installing
 
-Requires macOS 14 or later. Download `Mic Muter.dmg` from the Releases page, drag `Mic Muter.app` to `/Applications`, and open it.
+Requires macOS 14 or later. Download `MicMuter-<version>.dmg` from the Releases page, drag `Mic Muter.app` to `/Applications`, and open it.
 
-Releases are ad-hoc signed rather than notarized, so macOS blocks the first launch. Open **System Settings > Privacy & Security** and click **Open Anyway**; this is needed once per version. macOS 15 removed the right-click > Open shortcut, so the System Settings step is the only route.
+Use **Check for Updates…** in the popover to find and install the latest release.
+
+GitHub releases are signed with the same Apple Development certificate used by Key Remapper, but are not notarized. macOS may block the first launch. Open **System Settings > Privacy & Security** and click **Open Anyway**; this is needed once per version. macOS 15 removed the right-click > Open shortcut, so the System Settings step is the only route.
 
 ## Development
 
@@ -40,9 +42,9 @@ Needs Xcode and `swift-format`.
 - `make test` runs core tests and the AppKit icon smoke test. Interactive checks are listed in `Tests/MANUAL_TESTS.md`.
 - `make lint` checks Swift sources with `swift-format`.
 - `make install` builds from source and replaces `/Applications/Mic Muter.app`, then opens it. macOS may request an administrator password.
-- `make release VERSION=1.2.0` builds a universal `dist/Mic Muter.dmg`. `VERSION` defaults to `1.0.0`.
+- `make release VERSION=1.2.0` builds a universal `dist/MicMuter-1.2.0.dmg`. `VERSION` defaults to `1.0.0`.
 
-`make install` and `make release` both ad-hoc sign, so the app runs locally without a certificate.
+`make install` and `make release` use ad-hoc signing by default. GitHub releases use the Apple Development certificate so Sparkle can verify updates between versions.
 
 ## Releases
 
@@ -52,4 +54,11 @@ Run `make release-patch`, `make release-minor`, or `make release-major`. These t
 
 Or trigger it from the Actions tab via *Release* > *Run workflow* with the tag you want.
 
-Each release has two assets: `Mic Muter.dmg` (Apple silicon and Intel) and `SHA256SUMS`, which verifies with `shasum -c SHA256SUMS`.
+Each release includes `MicMuter-<version>.dmg` (Apple silicon and Intel), `MicMuter-<version>-SHA256SUMS`, and `appcast.xml` for Sparkle updates. Verify the DMG with `shasum -c MicMuter-<version>-SHA256SUMS`.
+
+The release workflow needs these repository secrets:
+
+- `MAC_APP_CERTIFICATE`: the signing identity name.
+- `MAC_BUILD_CERTIFICATE_BASE64`: the signing certificate (`.p12`) encoded as base64.
+- `MAC_BUILD_CERTIFICATE_BASE64_PASSWORD`: the `.p12` password.
+- `SPARKLE_PRIVATE_KEY`: the private EdDSA key whose public key matches `SUPublicEDKey` in `Resources/Info.plist`.

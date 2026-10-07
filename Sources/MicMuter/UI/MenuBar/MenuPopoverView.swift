@@ -2,6 +2,7 @@ import SwiftUI
 
 struct MenuPopoverView: View {
     @Bindable var model: MicMuterModel
+    let onCheckForUpdates: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -9,6 +10,11 @@ struct MenuPopoverView: View {
             DevicePickerView(model: model)
             Divider()
             SettingsRowsView(model: model)
+            Button(action: onCheckForUpdates) {
+                Label("Check for Updates…", systemImage: "arrow.down.circle")
+            }
+            .buttonStyle(.link)
+            .font(.caption)
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("\(AppInfo.name) \(AppInfo.version)")

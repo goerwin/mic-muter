@@ -10,6 +10,7 @@
 		A10000000000000000000003 /* CoreAudioDeviceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000003 /* CoreAudioDeviceManager.swift */; };
 		A10000000000000000000004 /* MenuPopoverView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C20000000000000000000004 /* MenuPopoverView.swift */; };
 		A10000000000000000000006 /* KeyboardShortcuts in Frameworks */ = {isa = PBXBuildFile; productRef = F10000000000000000000002 /* KeyboardShortcuts */; };
+		A10000000000000000000015 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; productRef = F20000000000000000000002 /* Sparkle */; };
 		A10000000000000000000007 /* MicStatus.swift in Sources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000008 /* MicStatus.swift */; };
 		A10000000000000000000008 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C10000000000000000000009 /* Assets.xcassets */; };
 		A10000000000000000000009 /* MenuBarIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2000000000000000000000A /* MenuBarIcon.swift */; };
@@ -80,6 +81,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A10000000000000000000006 /* KeyboardShortcuts in Frameworks */,
+				A10000000000000000000015 /* Sparkle in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -244,6 +246,7 @@
 			name = "Mic Muter";
 			packageProductDependencies = (
 				F10000000000000000000002 /* KeyboardShortcuts */,
+				F20000000000000000000002 /* Sparkle */,
 			);
 			productName = "Mic Muter";
 			productReference = C10000000000000000000007 /* Mic Muter.app */;
@@ -273,6 +276,7 @@
 			mainGroup = E10000000000000000000001;
 			packageReferences = (
 				F10000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
+				F20000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */,
 			);
 			productRefGroup = E10000000000000000000005 /* Products */;
 			targets = (
@@ -424,6 +428,14 @@
 				minimumVersion = 3.1.0;
 			};
 		};
+		F20000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/sparkle-project/Sparkle";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.10.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -431,6 +443,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = F10000000000000000000001 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */;
 			productName = KeyboardShortcuts;
+		};
+		F20000000000000000000002 /* Sparkle */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F20000000000000000000001 /* XCRemoteSwiftPackageReference "Sparkle" */;
+			productName = Sparkle;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
