@@ -6,9 +6,8 @@ on:
   pull_request:
 
 concurrency:
-  # Cancel superseded runs for the same ref.
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Shared with release.yml, which cancels CI when it builds the same commit.
+  group: mac-${{ github.sha }}
 
 permissions:
   contents: read

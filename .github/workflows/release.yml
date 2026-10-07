@@ -15,8 +15,9 @@ permissions:
   contents: read
 
 concurrency:
-  group: release-${{ github.ref }}
-  cancel-in-progress: false
+  # Shares CI's group so a tag release cancels CI for the same commit.
+  group: mac-${{ github.sha }}
+  cancel-in-progress: true
 
 jobs:
   release:
