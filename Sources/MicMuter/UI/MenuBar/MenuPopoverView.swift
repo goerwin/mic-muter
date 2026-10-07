@@ -9,25 +9,38 @@ struct MenuPopoverView: View {
             MuteControlView(model: model)
             DevicePickerView(model: model)
             Divider()
-            SettingsRowsView(model: model)
-            Button(action: onCheckForUpdates) {
-                Label("Check for Updates…", systemImage: "arrow.down.circle")
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Preferences")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                SettingsRowsView(model: model)
             }
-            .buttonStyle(.link)
-            .font(.caption)
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
+            Divider()
+            VStack(spacing: 5) {
+                if let repositoryURL = AppInfo.repositoryURL {
+                    Link(destination: repositoryURL) {
+                        Text("\(AppInfo.name) \(AppInfo.version)")
+                            .font(.caption)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                } else {
                     Text("\(AppInfo.name) \(AppInfo.version)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    if let repositoryURL = AppInfo.repositoryURL {
-                        Link("GitHub", destination: repositoryURL)
-                            .font(.caption)
-                    }
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
-                Spacer()
-                Button("Quit", action: model.terminate)
-                    .keyboardShortcut("q", modifiers: .command)
+
+                Button("Check for Updates…", action: onCheckForUpdates)
+                    .buttonStyle(.link)
+                    .font(.caption)
+                    .frame(maxWidth: .infinity, alignment: .center)
+
+                HStack {
+                    Spacer()
+                    Button("Quit", action: model.terminate)
+                        .keyboardShortcut("q", modifiers: .command)
+                }
+                .font(.caption)
             }
         }
         .padding(16)
