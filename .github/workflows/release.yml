@@ -101,15 +101,24 @@ jobs:
             --link "$REPO_URL" \
             dist
 
-      - name: Create GitHub Release
+      - name: Publish GitHub Release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create "$TAG" \
-            "dist/MicMuter-$VERSION.dmg" \
-            "dist/MicMuter-$VERSION-SHA256SUMS" \
-            dist/appcast.xml \
-            --title "$TAG" \
-            --notes-file "dist/MicMuter-$VERSION.md" \
-            --verify-tag
+          assets=(
+            "dist/MicMuter-$VERSION.dmg"
+            "dist/MicMuter-$VERSION-SHA256SUMS"
+            dist/appcast.xml
+          )
+          notes="dist/MicMuter-$VERSION.md"
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "${assets[@]}" --clobber
+            gh release edit "$TAG" --title "$TAG" --notes-file "$notes"
+          else
+            gh release create "$TAG" "${assets[@]}" \
+              --title "$TAG" \
+              --notes-file "$notes" \
+              --verify-tag
+          fi
