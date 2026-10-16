@@ -24,6 +24,8 @@
 	<string>14.0</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>MicMuterBuildChannel</key>
+	<string>$(MIC_MUTER_BUILD_CHANNEL)</string>
 	<key>NSPrincipalClass</key>
 	<string>NSApplication</string>
 	<key>repositoryURL</key>

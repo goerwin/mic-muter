@@ -1,15 +1,15 @@
 #!/bin/zsh
 set -euo pipefail
 
-# Build and install to /Applications. Override version with VERSION=x.y.z.
+# Build and install to /Applications, then launch the app.
 
-project_root="${0:A:h}"
+project_root="${0:A:h:h}"
 install_directory="/Applications"
-app_name="Mic Muter.app"
-app_source="$project_root/.build/DerivedData/Build/Products/Release/$app_name"
-app_destination="$install_directory/$app_name"
-temporary_app="$install_directory/.Mic Muter.installing.$$.app"
-backup_app="$install_directory/.Mic Muter.backup.$$.app"
+app_name="Mic Muter"
+app_source="$project_root/.build/DerivedData/Build/Products/Release/$app_name.app"
+app_destination="$install_directory/$app_name.app"
+temporary_app="$install_directory/.$app_name.installing.$$.app"
+backup_app="$install_directory/.$app_name.backup.$$.app"
 
 cleanup() {
 	if [[ -e "$temporary_app" ]]; then
@@ -19,24 +19,27 @@ cleanup() {
 		sudo mv "$backup_app" "$app_destination"
 	fi
 }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
 
 quit_running_app() {
-	if ! pgrep -x "Mic Muter" >/dev/null 2>&1; then
+	if ! pgrep -x "$app_name" >/dev/null 2>&1; then
 		return 0
 	fi
 
 	osascript -e 'tell application id "com.goerwin.MicMuter" to quit' >/dev/null 2>&1 || true
 	local attempt
 	for attempt in {1..25}; do
-		pgrep -x "Mic Muter" >/dev/null 2>&1 || return 0
+		pgrep -x "$app_name" >/dev/null 2>&1 || return 0
 		sleep 0.2
 	done
-	killall "Mic Muter" >/dev/null 2>&1 || true
+	killall "$app_name" >/dev/null 2>&1 || true
 	sleep 0.2
-	killall -9 "Mic Muter" >/dev/null 2>&1 || true
+	killall -9 "$app_name" >/dev/null 2>&1 || true
 }
 
+# Build before touching the installed app.
 make -C "$project_root" build CONFIGURATION=Release
 if [[ ! -d "$app_source" ]]; then
 	print -u2 "The build did not produce an app at: $app_source"
@@ -44,13 +47,14 @@ if [[ ! -d "$app_source" ]]; then
 fi
 
 version=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$app_source/Contents/Info.plist")
-print "Installing Mic Muter $version from source to $app_destination"
+print "Installing $app_name $version from source to $app_destination"
 if [[ -e "$app_destination" ]]; then
 	print "This replaces the existing copy in $install_directory."
 fi
 
 quit_running_app
 
+# Keep the previous app until the replacement is in place.
 sudo ditto "$app_source" "$temporary_app"
 if [[ -e "$app_destination" ]]; then
 	sudo mv "$app_destination" "$backup_app"
@@ -60,5 +64,5 @@ if [[ -e "$backup_app" ]]; then
 	sudo rm -rf "$backup_app"
 fi
 trap - EXIT INT TERM
-print "Installed Mic Muter $version to: $app_destination"
+print "Installed $app_name $version to: $app_destination"
 open "$app_destination"

@@ -10,7 +10,10 @@ enum AppInfo {
     }
 
     static var version: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let bundle = Bundle.main
+        let version = bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+        let isDevelopment = bundle.object(forInfoDictionaryKey: "MicMuterBuildChannel") as? String == "Development"
+        return isDevelopment ? "\(version) (Development)" : version
     }
 
     static var repositoryURL: URL? {

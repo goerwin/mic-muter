@@ -8,7 +8,7 @@ DIST_DIR := dist
 APP_NAME := Mic Muter
 APP_SOURCE := $(DERIVED_DATA)/Build/Products/Release/$(APP_NAME).app
 
-# Set by CI from git tag. Default keeps `make install`/`release` working.
+# Set by CI from git tag. Default keeps `make release` working.
 VERSION ?= 1.0.0
 CODE_SIGNING_IDENTITY ?=
 CODE_SIGN_STYLE ?=
@@ -30,7 +30,7 @@ XCODEBUILD = SWIFTPM_MODULECACHE_OVERRIDE="$(CURDIR)/$(BUILD_DIR)/SwiftPMModuleC
 
 build:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache" "$(BUILD_DIR)/ClangModuleCache"
-	$(XCODEBUILD) -configuration "$(CONFIGURATION)" build
+	$(XCODEBUILD) -configuration "$(CONFIGURATION)" MIC_MUTER_BUILD_CHANNEL=Development build
 
 test:
 	@mkdir -p "$(BUILD_DIR)/SwiftPMModuleCache"
@@ -42,7 +42,7 @@ lint:
 	xcrun swift-format lint --configuration .swift-format --strict --recursive Package.swift Sources Tests
 
 install:
-	./install.zsh
+	./Scripts/install.zsh
 
 # Build universal Release .app and package into $(DIST_DIR) as MicMuter-$(VERSION).dmg.
 release:
