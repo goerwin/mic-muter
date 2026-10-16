@@ -10,13 +10,14 @@ app_source="$project_root/.build/DerivedData/Build/Products/Release/$app_name.ap
 app_destination="$install_directory/$app_name.app"
 temporary_app="$install_directory/.$app_name.installing.$$.app"
 backup_app="$install_directory/.$app_name.backup.$$.app"
+sudo_command=()
 
 cleanup() {
 	if [[ -e "$temporary_app" ]]; then
-		sudo rm -rf "$temporary_app"
+		"${sudo_command[@]}" rm -rf "$temporary_app"
 	fi
 	if [[ -e "$backup_app" && ! -e "$app_destination" ]]; then
-		sudo mv "$backup_app" "$app_destination"
+		"${sudo_command[@]}" mv "$backup_app" "$app_destination"
 	fi
 }
 trap cleanup EXIT
@@ -52,16 +53,22 @@ if [[ -e "$app_destination" ]]; then
 	print "This replaces the existing copy in $install_directory."
 fi
 
+# Request admin access only if the installation needs it.
+if [[ ! -w "$install_directory" || ( -e "$app_destination" && ! -w "$app_destination" ) ]]; then
+	sudo -v
+	sudo_command=(sudo)
+fi
+
 quit_running_app
 
 # Keep the previous app until the replacement is in place.
-sudo ditto "$app_source" "$temporary_app"
+"${sudo_command[@]}" ditto "$app_source" "$temporary_app"
 if [[ -e "$app_destination" ]]; then
-	sudo mv "$app_destination" "$backup_app"
+	"${sudo_command[@]}" mv "$app_destination" "$backup_app"
 fi
-sudo mv "$temporary_app" "$app_destination"
+"${sudo_command[@]}" mv "$temporary_app" "$app_destination"
 if [[ -e "$backup_app" ]]; then
-	sudo rm -rf "$backup_app"
+	"${sudo_command[@]}" rm -rf "$backup_app"
 fi
 trap - EXIT INT TERM
 print "Installed $app_name $version to: $app_destination"
